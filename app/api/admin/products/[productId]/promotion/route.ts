@@ -6,45 +6,58 @@ interface RouteParams {
   params: Promise<{ productId: string }>;
 }
 
+function parsePromotionPercent(
+  body: unknown
+):
+  | { ok: true; promotionPercent: number | null }
+  | { ok: false; error: string } {
+  if (!body || typeof body !== "object") {
+    return { ok: false, error: "promotion_percent is required." };
+  }
+
+  if (!("promotion_percent" in body)) {
+    return { ok: false, error: "promotion_percent is required." };
+  }
+
+  const raw = (body as { promotion_percent: unknown }).promotion_percent;
+
+  if (raw === undefined) {
+    return { ok: false, error: "promotion_percent is required." };
+  }
+
+  if (raw === null || raw === 0) {
+    return { ok: true, promotionPercent: null };
+  }
+
+  if (
+    typeof raw !== "number" ||
+    !Number.isInteger(raw) ||
+    raw < 1 ||
+    raw > 100
+  ) {
+    return {
+      ok: false,
+      error: "Promotion must be an integer between 1 and 100.",
+    };
+  }
+
+  return { ok: true, promotionPercent: raw };
+}
+
 export async function PATCH(
   request: NextRequest,
   { params }: RouteParams
 ) {
   try {
     const { productId } = await params;
-    const body: { promotion_percent?: number | null } = await request.json();
+    const body: unknown = await request.json();
+    const parsed = parsePromotionPercent(body);
 
-    if (!("promotion_percent" in body)) {
-      return NextResponse.json(
-        { error: "promotion_percent is required." },
-        { status: 400 }
-      );
+    if (!parsed.ok) {
+      return NextResponse.json({ error: parsed.error }, { status: 400 });
     }
 
-    const raw = body.promotion_percent;
-    if (raw === undefined) {
-      return NextResponse.json(
-        { error: "promotion_percent is required." },
-        { status: 400 }
-      );
-    }
-
-    let promotionPercent: number | null = raw;
-
-    if (promotionPercent === null || promotionPercent === 0) {
-      promotionPercent = null;
-    } else if (
-      typeof promotionPercent !== "number" ||
-      !Number.isInteger(promotionPercent) ||
-      promotionPercent < 1 ||
-      promotionPercent > 100
-    ) {
-      return NextResponse.json(
-        { error: "Promotion must be an integer between 1 and 100." },
-        { status: 400 }
-      );
-    }
-
+    const { promotionPercent } = parsed;
     const supabase = getSupabaseClient();
 
     const { data: existing, error: fetchError } = await supabase
