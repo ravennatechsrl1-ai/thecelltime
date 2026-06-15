@@ -6,6 +6,8 @@ import { useAuth } from "@/components/AuthProvider";
 import { useCart } from "@/components/CartProvider";
 import { useLanguage } from "@/components/LanguageProvider";
 import { getCheckoutCustomer, redirectToCheckout } from "@/lib/client-checkout";
+import { getEffectivePrice } from "@/lib/product-pricing";
+import ProductPriceDisplay, { ProductPriceInline } from "@/components/ProductPriceDisplay";
 
 export default function CartDrawer() {
   const {
@@ -73,9 +75,7 @@ export default function CartDrawer() {
                   </div>
                   <div className="flex min-w-0 flex-1 flex-col">
                     <p className="truncate text-sm font-semibold">{product.name}</p>
-                    <p className="text-sm text-brand-gray-600">
-                      {formatPrice(product.price)}
-                    </p>
+                    <ProductPriceInline product={product} />
                     <div className="mt-2 flex items-center gap-2">
                       <button
                         type="button"
@@ -145,7 +145,7 @@ function CheckoutButton() {
           lineItems: items.map(({ product, quantity }) => ({
             productId: product.id,
             name: product.name,
-            price: product.price,
+            price: getEffectivePrice(product),
             quantity,
             imageUrl: product.image_url,
           })),

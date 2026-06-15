@@ -1,5 +1,4 @@
 import { en } from "@/lib/i18n/translations/en";
-import { fr } from "@/lib/i18n/translations/fr";
 import { it } from "@/lib/i18n/translations/it";
 import { Locale, LocaleConfig, Translations } from "@/lib/i18n/types";
 import { RepairTicketStatus } from "@/types";
@@ -7,14 +6,13 @@ import { RepairTicketStatus } from "@/types";
 export const LOCALES: LocaleConfig[] = [
   { code: "it", label: "Italiano", htmlLang: "it", intlLocale: "it-IT" },
   { code: "en", label: "English", htmlLang: "en", intlLocale: "en-GB" },
-  { code: "fr", label: "Français", htmlLang: "fr", intlLocale: "fr-FR" },
 ];
 
 export const DEFAULT_LOCALE: Locale = "it";
 
 export const LOCALE_STORAGE_KEY = "thecelltime-locale";
 
-const dictionaries: Record<Locale, Translations> = { it, en, fr };
+const dictionaries: Record<Locale, Translations> = { it, en };
 
 export function getTranslations(locale: Locale): Translations {
   return dictionaries[locale] ?? dictionaries[DEFAULT_LOCALE];

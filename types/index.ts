@@ -11,6 +11,8 @@ export interface Product {
   brand: string;
   image_url: string;
   stock: number;
+  /** Percentage off the listed price (e.g. 20 = 20% off). Null = no promotion. */
+  promotion_percent: number | null;
 }
 
 export type RepairTicketStatus =
@@ -184,6 +186,7 @@ export interface AdminDashboardStats {
   activeRepairs: number;
   phonesInCatalog: number;
   accessoriesInCatalog: number;
+  promotedProductsCount: number;
   revenueToday: number;
   ordersToday: number;
   averageOrderValue: number;

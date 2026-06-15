@@ -10,34 +10,38 @@ const config: Config = {
     extend: {
       colors: {
         brand: {
-          black: "#0a0a0a",
-          navy: "#0f172a",
-          electric: "#3b82f6",
+          black: "#05080f",
+          navy: "#0a1628",
+          "navy-light": "#132238",
+          electric: "#1e6bff",
+          "electric-dark": "#1554cc",
+          "electric-light": "#4d8dff",
+          silver: "#b8c4d4",
           coral: "#f97316",
           emerald: "#10b981",
           violet: "#8b5cf6",
           cyan: "#06b6d4",
           rose: "#f43f5e",
           gray: {
-            50: "#fafafa",
-            100: "#f4f4f5",
-            200: "#e4e4e7",
-            300: "#d4d4d8",
-            400: "#a1a1aa",
-            500: "#71717a",
-            600: "#52525b",
-            700: "#3f3f46",
-            800: "#27272a",
-            900: "#18181b",
+            50: "#f5f7fa",
+            100: "#eef1f6",
+            200: "#dde3ed",
+            300: "#c5cedc",
+            400: "#94a3b8",
+            500: "#64748b",
+            600: "#475569",
+            700: "#334155",
+            800: "#1e293b",
+            900: "#0f172a",
           },
-          accent: "#2563eb",
+          accent: "#1e6bff",
         },
       },
       backgroundImage: {
         "hero-gradient":
-          "linear-gradient(135deg, #0f172a 0%, #1e3a8a 45%, #312e81 100%)",
+          "linear-gradient(135deg, #0a1628 0%, #132238 50%, #1e3a6e 100%)",
         "mesh-gradient":
-          "radial-gradient(at 20% 30%, rgba(59,130,246,0.35) 0, transparent 50%), radial-gradient(at 80% 20%, rgba(139,92,246,0.3) 0, transparent 45%), radial-gradient(at 60% 80%, rgba(249,115,22,0.25) 0, transparent 50%)",
+          "radial-gradient(at 20% 30%, rgba(30,107,255,0.18) 0, transparent 50%), radial-gradient(at 80% 20%, rgba(77,141,255,0.12) 0, transparent 45%), radial-gradient(at 60% 80%, rgba(10,22,40,0.08) 0, transparent 50%)",
       },
       fontFamily: {
         sans: [
@@ -50,8 +54,22 @@ const config: Config = {
         ],
       },
       boxShadow: {
-        card: "0 0 0 1px rgba(0,0,0,0.06), 0 1px 2px rgba(0,0,0,0.04)",
-        "card-hover": "0 0 0 1px rgba(0,0,0,0.08), 0 4px 12px rgba(0,0,0,0.06)",
+        card: "0 0 0 1px rgba(10,22,40,0.06), 0 1px 2px rgba(10,22,40,0.04)",
+        "card-hover":
+          "0 0 0 1px rgba(30,107,255,0.12), 0 8px 24px rgba(30,107,255,0.08)",
+        "glow-electric": "0 4px 20px rgba(30,107,255,0.25)",
+      },
+      transitionDuration: {
+        DEFAULT: "200ms",
+      },
+      keyframes: {
+        marquee: {
+          "0%": { transform: "translateX(0)" },
+          "100%": { transform: "translateX(-50%)" },
+        },
+      },
+      animation: {
+        marquee: "marquee 42s linear infinite",
       },
     },
   },

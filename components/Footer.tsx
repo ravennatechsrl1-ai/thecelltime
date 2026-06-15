@@ -1,39 +1,49 @@
 "use client";
 
 import Link from "next/link";
+import SiteLogo from "@/components/SiteLogo";
 import { useLanguage } from "@/components/LanguageProvider";
 
 export default function Footer() {
   const { t } = useLanguage();
 
   return (
-    <footer className="mt-auto border-t border-brand-gray-200 bg-brand-gray-50">
+    <footer className="mt-auto border-t border-brand-navy-light bg-brand-navy text-brand-gray-300">
       <div className="container-app py-10 sm:py-12">
         <div className="grid gap-8 sm:grid-cols-2 lg:grid-cols-4">
           <div>
-            <p className="text-lg font-black uppercase tracking-tighter">
-              TheCellTime
-            </p>
-            <p className="mt-2 max-w-xs text-sm leading-relaxed text-brand-gray-600">
+            <SiteLogo className="h-10 w-auto brightness-110" linked={false} />
+            <p className="mt-3 max-w-xs text-sm leading-relaxed text-brand-gray-400">
               {t.footer.desc}
             </p>
           </div>
 
           <div>
-            <p className="section-title mb-3">{t.footer.navigation}</p>
+            <p className="mb-3 text-xs font-bold uppercase tracking-[0.2em] text-brand-silver">
+              {t.footer.navigation}
+            </p>
             <ul className="space-y-2 text-sm">
               <li>
-                <Link href="/shop" className="text-brand-gray-600 hover:text-brand-black">
+                <Link
+                  href="/shop"
+                  className="text-brand-gray-400 transition-colors duration-200 hover:text-brand-electric-light"
+                >
                   {t.nav.shop}
                 </Link>
               </li>
               <li>
-                <Link href="/repair" className="text-brand-gray-600 hover:text-brand-black">
+                <Link
+                  href="/repair"
+                  className="text-brand-gray-400 transition-colors duration-200 hover:text-brand-electric-light"
+                >
                   {t.nav.repair}
                 </Link>
               </li>
               <li>
-                <Link href="/track" className="text-brand-gray-600 hover:text-brand-black">
+                <Link
+                  href="/track"
+                  className="text-brand-gray-400 transition-colors duration-200 hover:text-brand-electric-light"
+                >
                   {t.nav.track}
                 </Link>
               </li>
@@ -41,8 +51,10 @@ export default function Footer() {
           </div>
 
           <div>
-            <p className="section-title mb-3">{t.footer.contacts}</p>
-            <ul className="space-y-2 text-sm text-brand-gray-600">
+            <p className="mb-3 text-xs font-bold uppercase tracking-[0.2em] text-brand-silver">
+              {t.footer.contacts}
+            </p>
+            <ul className="space-y-2 text-sm text-brand-gray-400">
               <li>Via Roma 42, Milano</li>
               <li>+39 02 1234 5678</li>
               <li>info@thecelltime.it</li>
@@ -50,8 +62,10 @@ export default function Footer() {
           </div>
 
           <div>
-            <p className="section-title mb-3">{t.footer.hours}</p>
-            <ul className="space-y-2 text-sm text-brand-gray-600">
+            <p className="mb-3 text-xs font-bold uppercase tracking-[0.2em] text-brand-silver">
+              {t.footer.hours}
+            </p>
+            <ul className="space-y-2 text-sm text-brand-gray-400">
               <li>{t.footer.weekdays}</li>
               <li>{t.footer.saturday}</li>
               <li>{t.footer.sunday}</li>
@@ -59,7 +73,7 @@ export default function Footer() {
           </div>
         </div>
 
-        <div className="mt-10 flex flex-col gap-2 border-t border-brand-gray-200 pt-6 text-xs text-brand-gray-500 sm:flex-row sm:items-center sm:justify-between">
+        <div className="mt-10 flex flex-col gap-2 border-t border-white/10 pt-6 text-xs text-brand-gray-500 sm:flex-row sm:items-center sm:justify-between">
           <p>© {new Date().getFullYear()} TheCellTime. {t.footer.rights}</p>
           <p>{t.footer.payments}</p>
         </div>

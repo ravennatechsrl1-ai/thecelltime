@@ -19,6 +19,7 @@ interface NavDropdownProps {
   icon: ReactNode;
   items?: NavDropdownItem[];
   groups?: NavDropdownGroup[];
+  inverted?: boolean;
 }
 
 export default function NavDropdown({
@@ -26,6 +27,7 @@ export default function NavDropdown({
   icon,
   items = [],
   groups = [],
+  inverted = false,
 }: NavDropdownProps) {
   const [open, setOpen] = useState(false);
   const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -48,7 +50,11 @@ export default function NavDropdown({
     >
       <button
         type="button"
-        className="flex items-center gap-2 px-3 py-2 text-sm font-medium text-brand-gray-700 transition-colors hover:text-brand-black"
+        className={`flex items-center gap-2 px-3 py-2 text-sm font-medium transition-colors ${
+          inverted
+            ? "text-gray-300 hover:text-white"
+            : "text-brand-gray-700 hover:text-brand-black"
+        }`}
         aria-expanded={open}
         onClick={() => setOpen((v) => !v)}
       >
@@ -80,7 +86,7 @@ export default function NavDropdown({
                     <Link
                       key={item.href + item.label}
                       href={item.href}
-                      className="block px-4 py-2 pl-6 text-sm text-brand-gray-700 transition-colors hover:bg-brand-gray-50 hover:text-brand-black"
+                      className="block px-4 py-2 pl-6 text-sm text-brand-gray-700 transition-colors duration-200 hover:bg-brand-electric/5 hover:text-brand-electric"
                       onClick={() => setOpen(false)}
                     >
                       {item.label}
@@ -92,7 +98,7 @@ export default function NavDropdown({
                 <Link
                   key={item.href + item.label}
                   href={item.href}
-                  className="block px-4 py-2.5 text-sm text-brand-gray-700 transition-colors hover:bg-brand-gray-50 hover:text-brand-black"
+                      className="block px-4 py-2.5 text-sm text-brand-gray-700 transition-colors duration-200 hover:bg-brand-electric/5 hover:text-brand-electric"
                   onClick={() => setOpen(false)}
                 >
                   {item.label}

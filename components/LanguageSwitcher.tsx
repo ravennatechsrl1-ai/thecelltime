@@ -12,10 +12,9 @@ const LOCALE_META: Record<
 > = {
   it: { code: "IT", name: "Italia" },
   en: { code: "EN", name: "English" },
-  fr: { code: "FR", name: "France" },
 };
 
-export default function LanguageSwitcher() {
+export default function LanguageSwitcher({ inverted = false }: { inverted?: boolean }) {
   const { locale, setLocale, t, hydrated } = useLanguage();
   const [open, setOpen] = useState(false);
   const rootRef = useRef<HTMLDivElement>(null);
@@ -52,7 +51,11 @@ export default function LanguageSwitcher() {
       <button
         type="button"
         onClick={() => setOpen((value) => !value)}
-        className="flex h-9 items-center gap-2 rounded-md bg-brand-gray-100 px-2.5 text-xs font-bold uppercase tracking-wide text-brand-black transition-colors hover:bg-brand-gray-200"
+        className={`flex h-9 items-center gap-2 rounded-md px-2.5 text-xs font-bold uppercase tracking-wide transition-colors ${
+          inverted
+            ? "bg-white/10 text-white hover:bg-white/20"
+            : "bg-brand-gray-100 text-brand-black hover:bg-brand-gray-200"
+        }`}
         aria-expanded={open}
         aria-haspopup="listbox"
         aria-label={t.language.label}

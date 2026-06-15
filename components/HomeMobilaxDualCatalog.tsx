@@ -40,7 +40,7 @@ function MobilaxCatalogPanel({
       <div className="flex justify-center border-t border-brand-gray-200 px-4 py-4">
         <Link
           href={seeMoreHref}
-          className="inline-flex min-h-[40px] items-center rounded-full border border-brand-gray-300 bg-white px-8 text-xs font-bold uppercase tracking-wide text-brand-gray-700 transition-colors hover:border-brand-black hover:text-brand-black"
+          className="inline-flex min-h-[40px] items-center rounded-full border border-brand-gray-300 bg-white px-8 text-xs font-bold uppercase tracking-wide text-brand-gray-700 transition-all duration-200 hover:border-brand-electric hover:text-brand-electric"
         >
           {t.home.showMore}
         </Link>
@@ -61,7 +61,7 @@ export default function HomeMobilaxDualCatalog({
   const { t } = useLanguage();
 
   return (
-    <section className="border-t border-brand-gray-200 bg-[#f7f7f7] py-6 sm:py-8">
+    <section className="border-t border-brand-gray-200 bg-brand-gray-100 py-6 sm:py-8">
       <div className="container-app">
         <div className="grid gap-6 lg:grid-cols-2 lg:gap-8">
           <MobilaxCatalogPanel

@@ -34,6 +34,9 @@ function FieldLabel({
   );
 }
 
+type StockFilter = "all" | "in_stock" | "low" | "out";
+type ConditionFilter = "all" | "new" | "used";
+
 export default function ProductsPanel() {
   const { t, formatPrice } = useLanguage();
   const [activeTab, setActiveTab] = useState<InventoryTab>("phones");
@@ -63,6 +66,23 @@ export default function ProductsPanel() {
   const [stock, setStock] = useState("");
   const [imageFile, setImageFile] = useState<File | null>(null);
 
+  const [searchQuery, setSearchQuery] = useState("");
+  const [brandFilter, setBrandFilter] = useState("all");
+  const [conditionFilter, setConditionFilter] = useState<ConditionFilter>("all");
+  const [stockFilter, setStockFilter] = useState<StockFilter>("all");
+
+  const [editingProduct, setEditingProduct] = useState<Product | null>(null);
+  const [editName, setEditName] = useState("");
+  const [editBrand, setEditBrand] = useState("");
+  const [editCondition, setEditCondition] = useState<ProductCondition>("new");
+  const [editPrice, setEditPrice] = useState("");
+  const [editStock, setEditStock] = useState("");
+  const [editImageFile, setEditImageFile] = useState<File | null>(null);
+  const [editSaving, setEditSaving] = useState(false);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [catalogMessage, setCatalogMessage] = useState<string | null>(null);
+  const [catalogError, setCatalogError] = useState<string | null>(null);
+
   const tabs = useMemo(
     () => [
       { id: "phones" as const, label: t.admin.tabPhones },
@@ -86,10 +106,59 @@ export default function ProductsPanel() {
     return buildPhoneProductName(brandName, phoneModel, phoneStorage);
   }, [phoneBrand, phoneModel, phoneStorage]);
 
-  const filteredProducts = useMemo(
+  const categoryProducts = useMemo(
     () => products.filter((p) => p.category === activeTab),
     [products, activeTab]
   );
+
+  const brandOptions = useMemo(() => {
+    const brands = new Set(categoryProducts.map((product) => product.brand));
+    return Array.from(brands).sort((a, b) => a.localeCompare(b));
+  }, [categoryProducts]);
+
+  const displayedProducts = useMemo(() => {
+    let list = categoryProducts;
+    const query = searchQuery.trim().toLowerCase();
+
+    if (query) {
+      list = list.filter(
+        (product) =>
+          product.name.toLowerCase().includes(query) ||
+          product.brand.toLowerCase().includes(query)
+      );
+    }
+
+    if (brandFilter !== "all") {
+      list = list.filter((product) => product.brand === brandFilter);
+    }
+
+    if (activeTab === "phones" && conditionFilter !== "all") {
+      list = list.filter((product) => product.condition === conditionFilter);
+    }
+
+    if (stockFilter === "in_stock") {
+      list = list.filter((product) => product.stock > 5);
+    } else if (stockFilter === "low") {
+      list = list.filter((product) => product.stock > 0 && product.stock <= 5);
+    } else if (stockFilter === "out") {
+      list = list.filter((product) => product.stock <= 0);
+    }
+
+    return list;
+  }, [
+    categoryProducts,
+    searchQuery,
+    brandFilter,
+    conditionFilter,
+    stockFilter,
+    activeTab,
+  ]);
+
+  const hasActiveFilters =
+    searchQuery.trim() !== "" ||
+    brandFilter !== "all" ||
+    conditionFilter !== "all" ||
+    stockFilter !== "all";
 
   const loadProducts = useCallback(async () => {
     setLoading(true);
@@ -107,6 +176,95 @@ export default function ProductsPanel() {
   useEffect(() => {
     loadProducts();
   }, [loadProducts]);
+
+  function resetCatalogFilters() {
+    setSearchQuery("");
+    setBrandFilter("all");
+    setConditionFilter("all");
+    setStockFilter("all");
+  }
+
+  function openEditModal(product: Product) {
+    setEditingProduct(product);
+    setEditName(product.name);
+    setEditBrand(product.brand);
+    setEditCondition(product.condition ?? "new");
+    setEditPrice(String(product.price));
+    setEditStock(String(product.stock));
+    setEditImageFile(null);
+    setCatalogMessage(null);
+    setCatalogError(null);
+  }
+
+  function closeEditModal() {
+    setEditingProduct(null);
+    setEditImageFile(null);
+  }
+
+  async function handleEditSubmit(e: FormEvent) {
+    e.preventDefault();
+    if (!editingProduct) return;
+
+    setEditSaving(true);
+    setCatalogMessage(null);
+    setCatalogError(null);
+
+    const formData = new FormData();
+    formData.append("name", editName.trim());
+    formData.append("brand", editBrand.trim());
+    formData.append("price", editPrice);
+    formData.append("stock", editStock);
+    formData.append("condition", editingProduct.category === "phones" ? editCondition ?? "" : "");
+    if (editImageFile) {
+      formData.append("image", editImageFile);
+    }
+
+    try {
+      const response = await fetch(`/api/admin/products/${editingProduct.id}`, {
+        method: "PATCH",
+        body: formData,
+      });
+      const data: { product?: Product; error?: string } = await response.json();
+      if (!response.ok) throw new Error(data.error ?? t.admin.updateError);
+
+      setCatalogMessage(t.admin.updateSuccess);
+      closeEditModal();
+      await loadProducts();
+    } catch (err) {
+      setCatalogError(err instanceof Error ? err.message : t.admin.updateError);
+    } finally {
+      setEditSaving(false);
+    }
+  }
+
+  async function handleDeleteProduct(product: Product) {
+    const confirmed = window.confirm(
+      t.admin.deleteConfirm.replace("{name}", product.name)
+    );
+    if (!confirmed) return;
+
+    setDeletingId(product.id);
+    setCatalogMessage(null);
+    setCatalogError(null);
+
+    try {
+      const response = await fetch(`/api/admin/products/${product.id}`, {
+        method: "DELETE",
+      });
+      const data: { error?: string } = await response.json();
+      if (!response.ok) throw new Error(data.error ?? t.admin.deleteError);
+
+      if (editingProduct?.id === product.id) {
+        closeEditModal();
+      }
+      setCatalogMessage(t.admin.deleteSuccess);
+      await loadProducts();
+    } catch (err) {
+      setCatalogError(err instanceof Error ? err.message : t.admin.deleteError);
+    } finally {
+      setDeletingId(null);
+    }
+  }
 
   function resetForm() {
     setPhoneModel("");
@@ -388,6 +546,9 @@ export default function ProductsPanel() {
               setActiveTab(tab.id);
               setSuccess(null);
               setError(null);
+              resetCatalogFilters();
+              setCatalogMessage(null);
+              setCatalogError(null);
             }}
             className={`min-h-[44px] flex-1 border px-4 py-2 text-xs font-bold uppercase tracking-wide sm:flex-none sm:px-6 ${
               activeTab === tab.id
@@ -461,70 +622,313 @@ export default function ProductsPanel() {
       <Panel title={`${t.admin.catalogInventory} — ${uploadTitles[activeTab]}`}>
         {loading ? (
           <p className="text-sm text-brand-gray-500">{t.common.loading}</p>
-        ) : filteredProducts.length === 0 ? (
+        ) : categoryProducts.length === 0 ? (
           <p className="text-sm text-brand-gray-500">{t.admin.noProductsYet}</p>
         ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full min-w-[720px] text-left text-sm">
-              <thead className="border-b border-brand-gray-200 bg-brand-gray-50 text-xs font-bold uppercase tracking-wide text-brand-gray-500">
-                <tr>
-                  <th className="px-3 py-3">{t.admin.colProduct}</th>
-                  <th className="px-3 py-3">{t.admin.brand}</th>
-                  {activeTab === "phones" && (
-                    <th className="px-3 py-3">{t.admin.condition}</th>
-                  )}
-                  <th className="px-3 py-3">{t.admin.price}</th>
-                  <th className="px-3 py-3">{t.admin.stock}</th>
-                </tr>
-              </thead>
-              <tbody>
-                {filteredProducts.map((product) => (
-                  <tr key={product.id} className="border-b border-brand-gray-100 last:border-0">
-                    <td className="px-3 py-3">
-                      <div className="flex items-center gap-3">
-                        <div className="relative h-10 w-10 shrink-0 bg-brand-gray-50">
-                          <SafeImage
-                            src={product.image_url}
-                            alt={product.name}
-                            fill
-                            className="object-contain p-1"
-                            sizes="40px"
-                          />
-                        </div>
-                        <span className="font-medium text-brand-navy">{product.name}</span>
-                      </div>
-                    </td>
-                    <td className="px-3 py-3">{product.brand}</td>
-                    {activeTab === "phones" && (
-                      <td className="px-3 py-3 uppercase text-xs">
-                        {product.condition === "new"
-                          ? t.admin.condNew
-                          : product.condition === "used"
-                            ? t.admin.condUsed
-                            : "—"}
-                      </td>
-                    )}
-                    <td className="px-3 py-3 font-semibold">{formatPrice(product.price)}</td>
-                    <td className="px-3 py-3">
-                      <span
-                        className={`text-xs font-bold uppercase ${
-                          product.stock <= 0
-                            ? "text-red-600"
-                            : product.stock <= 5
-                              ? "text-amber-600"
-                              : "text-emerald-700"
-                        }`}
-                      >
-                        {product.stock}
-                      </span>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+          <div className="space-y-4">
+            <div className="border border-brand-gray-200 bg-brand-gray-50 p-4">
+              <p className="mb-3 text-[10px] font-bold uppercase tracking-widest text-brand-gray-400">
+                {t.admin.catalogFilters}
+              </p>
+              <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+                <div className="sm:col-span-2 lg:col-span-1">
+                  <FieldLabel htmlFor="catalog-search">{t.admin.filterSearch}</FieldLabel>
+                  <input
+                    id="catalog-search"
+                    type="search"
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    placeholder={t.admin.filterSearchPlaceholder}
+                    className="input-field"
+                  />
+                </div>
+                <div>
+                  <FieldLabel htmlFor="catalog-brand">{t.admin.brand}</FieldLabel>
+                  <select
+                    id="catalog-brand"
+                    value={brandFilter}
+                    onChange={(e) => setBrandFilter(e.target.value)}
+                    className="input-field"
+                  >
+                    <option value="all">{t.nav.allBrands}</option>
+                    {brandOptions.map((brand) => (
+                      <option key={brand} value={brand}>
+                        {brand}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                {activeTab === "phones" && (
+                  <div>
+                    <FieldLabel htmlFor="catalog-condition">{t.admin.condition}</FieldLabel>
+                    <select
+                      id="catalog-condition"
+                      value={conditionFilter}
+                      onChange={(e) =>
+                        setConditionFilter(e.target.value as ConditionFilter)
+                      }
+                      className="input-field"
+                    >
+                      <option value="all">{t.admin.filterConditionAll}</option>
+                      <option value="new">{t.admin.condNew}</option>
+                      <option value="used">{t.admin.condUsed}</option>
+                    </select>
+                  </div>
+                )}
+                <div>
+                  <FieldLabel htmlFor="catalog-stock">{t.admin.filterStock}</FieldLabel>
+                  <select
+                    id="catalog-stock"
+                    value={stockFilter}
+                    onChange={(e) => setStockFilter(e.target.value as StockFilter)}
+                    className="input-field"
+                  >
+                    <option value="all">{t.admin.filterStockAll}</option>
+                    <option value="in_stock">{t.admin.filterStockInStock}</option>
+                    <option value="low">{t.admin.filterStockLow}</option>
+                    <option value="out">{t.admin.filterStockOut}</option>
+                  </select>
+                </div>
+              </div>
+              <div className="mt-3 flex flex-wrap items-center justify-between gap-2">
+                <p className="text-xs text-brand-gray-500">
+                  {t.admin.showingProducts
+                    .replace("{shown}", String(displayedProducts.length))
+                    .replace("{total}", String(categoryProducts.length))}
+                </p>
+                {hasActiveFilters && (
+                  <button
+                    type="button"
+                    onClick={resetCatalogFilters}
+                    className="text-xs font-semibold uppercase tracking-wide text-brand-navy underline-offset-2 hover:underline"
+                  >
+                    {t.admin.clearFilters}
+                  </button>
+                )}
+              </div>
+            </div>
+
+            {catalogMessage && (
+              <p className="text-sm text-green-700">{catalogMessage}</p>
+            )}
+            {catalogError && <p className="text-sm text-red-600">{catalogError}</p>}
+
+            {displayedProducts.length === 0 ? (
+              <p className="text-sm text-brand-gray-500">{t.admin.noFilterResults}</p>
+            ) : (
+              <div className="overflow-x-auto">
+                <table className="w-full min-w-[860px] text-left text-sm">
+                  <thead className="border-b border-brand-gray-200 bg-brand-gray-50 text-xs font-bold uppercase tracking-wide text-brand-gray-500">
+                    <tr>
+                      <th className="px-3 py-3">{t.admin.colProduct}</th>
+                      <th className="px-3 py-3">{t.admin.brand}</th>
+                      {activeTab === "phones" && (
+                        <th className="px-3 py-3">{t.admin.condition}</th>
+                      )}
+                      <th className="px-3 py-3">{t.admin.price}</th>
+                      <th className="px-3 py-3">{t.admin.stock}</th>
+                      <th className="px-3 py-3">{t.admin.colActions}</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {displayedProducts.map((product) => (
+                      <tr key={product.id} className="border-b border-brand-gray-100 last:border-0">
+                        <td className="px-3 py-3">
+                          <div className="flex items-center gap-3">
+                            <div className="relative h-10 w-10 shrink-0 bg-brand-gray-50">
+                              <SafeImage
+                                src={product.image_url}
+                                alt={product.name}
+                                fill
+                                className="object-contain p-1"
+                                sizes="40px"
+                              />
+                            </div>
+                            <span className="font-medium text-brand-navy">{product.name}</span>
+                          </div>
+                        </td>
+                        <td className="px-3 py-3">{product.brand}</td>
+                        {activeTab === "phones" && (
+                          <td className="px-3 py-3 uppercase text-xs">
+                            {product.condition === "new"
+                              ? t.admin.condNew
+                              : product.condition === "used"
+                                ? t.admin.condUsed
+                                : "—"}
+                          </td>
+                        )}
+                        <td className="px-3 py-3 font-semibold">
+                          {formatPrice(product.price)}
+                        </td>
+                        <td className="px-3 py-3">
+                          <span
+                            className={`text-xs font-bold uppercase ${
+                              product.stock <= 0
+                                ? "text-red-600"
+                                : product.stock <= 5
+                                  ? "text-amber-600"
+                                  : "text-emerald-700"
+                            }`}
+                          >
+                            {product.stock}
+                          </span>
+                        </td>
+                        <td className="px-3 py-3">
+                          <div className="flex flex-wrap gap-2">
+                            <button
+                              type="button"
+                              onClick={() => openEditModal(product)}
+                              className="min-h-[36px] border border-brand-gray-300 bg-white px-3 py-1.5 text-[10px] font-bold uppercase tracking-wide text-brand-navy transition-colors hover:border-brand-black"
+                            >
+                              {t.admin.editProduct}
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => handleDeleteProduct(product)}
+                              disabled={deletingId === product.id}
+                              className="min-h-[36px] border border-red-200 bg-red-50 px-3 py-1.5 text-[10px] font-bold uppercase tracking-wide text-red-700 transition-colors hover:border-red-400 disabled:opacity-50"
+                            >
+                              {deletingId === product.id ? t.common.loading : t.admin.deleteProduct}
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
           </div>
         )}
       </Panel>
+
+      {editingProduct && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+          <div
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="edit-product-title"
+            className="max-h-[90vh] w-full max-w-lg overflow-y-auto border border-brand-gray-200 bg-white p-5 shadow-lg sm:p-6"
+          >
+            <div className="mb-4 flex items-start justify-between gap-3">
+              <h3
+                id="edit-product-title"
+                className="text-sm font-black uppercase tracking-wide text-brand-navy"
+              >
+                {t.admin.editProductTitle}
+              </h3>
+              <button
+                type="button"
+                onClick={closeEditModal}
+                className="text-xs font-bold uppercase text-brand-gray-500 hover:text-brand-black"
+              >
+                {t.common.cancel}
+              </button>
+            </div>
+
+            <form onSubmit={handleEditSubmit} className="space-y-4">
+              <div>
+                <FieldLabel htmlFor="edit-name">{t.admin.productName}</FieldLabel>
+                <input
+                  id="edit-name"
+                  type="text"
+                  value={editName}
+                  onChange={(e) => setEditName(e.target.value)}
+                  className="input-field"
+                  required
+                />
+              </div>
+
+              <div>
+                <FieldLabel htmlFor="edit-brand">{t.admin.brand}</FieldLabel>
+                <input
+                  id="edit-brand"
+                  type="text"
+                  value={editBrand}
+                  onChange={(e) => setEditBrand(e.target.value)}
+                  className="input-field"
+                  required
+                />
+              </div>
+
+              {editingProduct.category === "phones" && (
+                <div>
+                  <FieldLabel htmlFor="edit-condition">{t.admin.condition}</FieldLabel>
+                  <select
+                    id="edit-condition"
+                    value={editCondition ?? "new"}
+                    onChange={(e) =>
+                      setEditCondition(e.target.value as ProductCondition)
+                    }
+                    className="input-field"
+                  >
+                    <option value="new">{t.admin.condNew}</option>
+                    <option value="used">{t.admin.condUsed}</option>
+                  </select>
+                </div>
+              )}
+
+              <div className="grid gap-4 sm:grid-cols-2">
+                <div>
+                  <FieldLabel htmlFor="edit-price">{t.admin.price}</FieldLabel>
+                  <input
+                    id="edit-price"
+                    type="number"
+                    min="0"
+                    step="0.01"
+                    value={editPrice}
+                    onChange={(e) => setEditPrice(e.target.value)}
+                    className="input-field"
+                    required
+                  />
+                </div>
+                <div>
+                  <FieldLabel htmlFor="edit-stock">{t.admin.stock}</FieldLabel>
+                  <input
+                    id="edit-stock"
+                    type="number"
+                    min="0"
+                    step="1"
+                    value={editStock}
+                    onChange={(e) => setEditStock(e.target.value)}
+                    className="input-field"
+                    required
+                  />
+                </div>
+              </div>
+
+              <div>
+                <FieldLabel htmlFor="edit-image">{t.admin.replaceImageOptional}</FieldLabel>
+                <input
+                  id="edit-image"
+                  type="file"
+                  accept="image/jpeg,image/png,image/webp"
+                  onChange={(e) => setEditImageFile(e.target.files?.[0] ?? null)}
+                  className="input-field file:mr-4 file:border-0 file:bg-brand-black file:px-4 file:py-2 file:text-xs file:font-bold file:uppercase file:text-white"
+                />
+              </div>
+
+              <div className="flex flex-wrap gap-2 pt-2">
+                <button
+                  type="submit"
+                  disabled={editSaving}
+                  className="btn-primary max-w-xs disabled:opacity-50"
+                >
+                  {editSaving ? t.admin.saving : t.admin.saveChanges}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleDeleteProduct(editingProduct)}
+                  disabled={deletingId === editingProduct.id}
+                  className="min-h-[44px] border border-red-200 bg-red-50 px-5 py-3 text-sm font-semibold uppercase tracking-wide text-red-700 transition-colors hover:border-red-400 disabled:opacity-50"
+                >
+                  {t.admin.deleteProduct}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

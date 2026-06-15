@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { fetchAllProducts } from "@/lib/admin-analytics";
+import { mapProductRow } from "@/lib/map-product";
 import { getSupabaseClient } from "@/utils/supabase";
-import { Product, ProductCategory, ProductCondition } from "@/types";
+import { ProductCategory, ProductCondition } from "@/types";
 
 export async function GET() {
   try {
@@ -105,18 +106,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const product: Product = {
-      id: data.id as string,
-      name: data.name as string,
-      price: Number(data.price),
-      category: data.category as ProductCategory,
-      condition: data.condition as ProductCondition,
-      brand: data.brand as string,
-      image_url: data.image_url as string,
-      stock: Number(data.stock),
-    };
-
-    return NextResponse.json({ product });
+    return NextResponse.json({ product: mapProductRow(data as Record<string, unknown>) });
   } catch (error) {
     console.error("[admin/products]", error);
     const message =

@@ -61,8 +61,6 @@ export function FlagIcon({
   switch (locale) {
     case "it":
       return <FlagIT className={className} />;
-    case "fr":
-      return <FlagFR className={className} />;
     case "en":
       return <FlagGB className={className} />;
   }

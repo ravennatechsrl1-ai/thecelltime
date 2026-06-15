@@ -160,9 +160,23 @@ export function IconChevronRight({ className = "h-5 w-5" }: IconProps) {
   );
 }
 
-export function NavIconWrap({ children }: { children: ReactNode }) {
+export function NavIconWrap({
+  children,
+  inverted = false,
+  className = "",
+}: {
+  children: ReactNode;
+  inverted?: boolean;
+  className?: string;
+}) {
   return (
-    <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-brand-gray-100 text-brand-gray-600">
+    <span
+      className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full ${
+        inverted
+          ? "bg-white/10 text-white"
+          : "bg-brand-gray-100 text-brand-gray-600"
+      } ${className}`}
+    >
       {children}
     </span>
   );

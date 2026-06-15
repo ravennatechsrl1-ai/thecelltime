@@ -6,16 +6,24 @@ import { Suspense, useEffect, useMemo, useState } from "react";
 import MobilaxCatalogToolbar from "@/components/MobilaxCatalogToolbar";
 import MobilaxGridProductCard from "@/components/MobilaxGridProductCard";
 import { useLanguage } from "@/components/LanguageProvider";
-import { MOCK_PRODUCTS } from "@/lib/constants";
+import {
+  ACCESSORY_TYPES,
+  AccessoryType,
+  accessoryTypeToSlug,
+  productMatchesAccessoryType,
+} from "@/lib/admin-catalog";
 import { PHONE_BRANDS, productMatchesBrand } from "@/lib/phone-brands";
 import {
   getShopBrand,
+  isAccessoryShopView,
   isPhoneShopView,
+  isPromotionShopView,
   parseShopSegments,
   shopBrandPath,
   ShopView,
 } from "@/lib/shop-routes";
 import { Product } from "@/types";
+import { getEffectivePrice, isOnPromotion } from "@/lib/product-pricing";
 
 type SortOption = "featured" | "price-asc" | "price-desc";
 
@@ -23,6 +31,8 @@ const PER_PAGE = 50;
 
 function filterByView(products: Product[], view: ShopView): Product[] {
   switch (view.type) {
+    case "promotions":
+      return products.filter((product) => isOnPromotion(product));
     case "phones":
       return products.filter((product) => product.category === "phones");
     case "phones-new":
@@ -51,6 +61,12 @@ function filterByView(products: Product[], view: ShopView): Product[] {
       );
     case "accessories":
       return products.filter((product) => product.category === "accessories");
+    case "accessories-type":
+      return products.filter(
+        (product) =>
+          product.category === "accessories" &&
+          productMatchesAccessoryType(product.name, view.accessoryType)
+      );
     default:
       return products;
   }
@@ -59,10 +75,14 @@ function filterByView(products: Product[], view: ShopView): Product[] {
 function sortProducts(products: Product[], sort: SortOption): Product[] {
   const sorted = [...products];
   if (sort === "price-asc") {
-    return sorted.sort((a, b) => a.price - b.price);
+    return sorted.sort(
+      (a, b) => getEffectivePrice(a) - getEffectivePrice(b)
+    );
   }
   if (sort === "price-desc") {
-    return sorted.sort((a, b) => b.price - a.price);
+    return sorted.sort(
+      (a, b) => getEffectivePrice(b) - getEffectivePrice(a)
+    );
   }
   return sorted;
 }
@@ -77,6 +97,8 @@ function getPageTitle(
     if (config) return t.nav[config.labelKey];
   }
   switch (view.type) {
+    case "promotions":
+      return t.shop.filterPromotions;
     case "phones-new":
     case "phones-new-brand":
       return t.shop.filterPhonesNew;
@@ -87,9 +109,26 @@ function getPageTitle(
       return t.shop.phonesCategory;
     case "accessories":
       return t.shop.filterAccessories;
+    case "accessories-type":
+      return getAccessoryTypeLabel(view.accessoryType, t);
     default:
       return t.shop.title;
   }
+}
+
+function getAccessoryTypeLabel(
+  type: AccessoryType,
+  t: ReturnType<typeof useLanguage>["t"]
+): string {
+  const labels: Record<AccessoryType, string> = {
+    charger: t.nav.chargers,
+    cable: t.nav.cables,
+    case: t.nav.cases,
+    screenProtector: t.nav.screenProtectors,
+    audio: t.admin.accessoryTypeAudio,
+    other: t.admin.accessoryTypeOther,
+  };
+  return labels[type];
 }
 
 function ShopCatalogContent({ initialView }: { initialView: ShopView }) {
@@ -99,7 +138,7 @@ function ShopCatalogContent({ initialView }: { initialView: ShopView }) {
   const { t } = useLanguage();
   const [sort, setSort] = useState<SortOption>("featured");
   const [page, setPage] = useState(1);
-  const [products, setProducts] = useState<Product[]>(MOCK_PRODUCTS);
+  const [products, setProducts] = useState<Product[]>([]);
 
   const segments = pathname
     .replace(/^\/shop\/?/, "")
@@ -107,6 +146,8 @@ function ShopCatalogContent({ initialView }: { initialView: ShopView }) {
     .filter(Boolean);
   const view = parseShopSegments(segments) ?? initialView;
   const phoneContext = isPhoneShopView(view);
+  const accessoryContext = isAccessoryShopView(view);
+  const promotionContext = isPromotionShopView(view);
   const activeBrand = getShopBrand(view);
   const phoneCondition =
     view.type === "phones-used" || view.type === "phones-used-brand"
@@ -132,10 +173,10 @@ function ShopCatalogContent({ initialView }: { initialView: ShopView }) {
         const response = await fetch("/api/products");
         if (response.ok) {
           const data: { products: Product[] } = await response.json();
-          if (data.products.length > 0) setProducts(data.products);
+          setProducts(data.products ?? []);
         }
       } catch {
-        // fallback to mock data
+        // keep empty catalog on failure
       }
     }
     fetchProducts();
@@ -168,6 +209,11 @@ function ShopCatalogContent({ initialView }: { initialView: ShopView }) {
   const topCategories = [
     { href: "/shop", label: t.shop.filterAll, match: ["all"] as const },
     {
+      href: "/shop/promotions",
+      label: t.shop.filterPromotions,
+      match: ["promotions"] as const,
+    },
+    {
       href: "/shop/phones/new",
       label: t.shop.filterPhonesNew,
       match: ["phones-new", "phones-new-brand"] as const,
@@ -180,11 +226,38 @@ function ShopCatalogContent({ initialView }: { initialView: ShopView }) {
     {
       href: "/shop/accessories",
       label: t.shop.filterAccessories,
-      match: ["accessories"] as const,
+      match: ["accessories", "accessories-type"] as const,
     },
   ];
 
-  function isCategoryActive(match: readonly string[]) {
+  const phoneCategories = topCategories.filter(
+    (item) =>
+      item.label !== t.shop.filterAll && item.label !== t.shop.filterAccessories
+  );
+
+  const accessoryCategories = [
+    {
+      href: "/shop/accessories",
+      label: t.shop.filterAll,
+      match: ["accessories"] as const,
+    },
+    ...ACCESSORY_TYPES.map((type) => ({
+      href: `/shop/accessories/${accessoryTypeToSlug(type)}`,
+      label: getAccessoryTypeLabel(type, t),
+      match: ["accessories-type"] as const,
+      accessoryType: type,
+    })),
+  ];
+
+  function isCategoryActive(
+    match: readonly string[],
+    accessoryType?: AccessoryType
+  ) {
+    if (accessoryType) {
+      return (
+        view.type === "accessories-type" && view.accessoryType === accessoryType
+      );
+    }
     return match.includes(view.type);
   }
 
@@ -200,12 +273,12 @@ function ShopCatalogContent({ initialView }: { initialView: ShopView }) {
   }
 
   const visibleCategories = phoneContext
-    ? topCategories.filter(
-        (item) =>
-          item.label !== t.shop.filterAll &&
-          item.label !== t.shop.filterAccessories
-      )
-    : topCategories;
+    ? phoneCategories
+    : accessoryContext
+      ? accessoryCategories
+      : promotionContext
+        ? topCategories.filter((item) => item.match.includes("promotions"))
+        : topCategories;
 
   return (
     <div className="container-app py-4 sm:py-6">
@@ -247,7 +320,7 @@ function ShopCatalogContent({ initialView }: { initialView: ShopView }) {
               </li>
             </>
           )}
-          {!phoneContext && view.type !== "all" && (
+          {!phoneContext && !accessoryContext && view.type !== "all" && (
             <>
               <li aria-hidden="true">/</li>
               <li className="font-semibold uppercase tracking-wide text-brand-black">
@@ -255,7 +328,7 @@ function ShopCatalogContent({ initialView }: { initialView: ShopView }) {
               </li>
             </>
           )}
-          {!phoneContext && view.type === "all" && (
+          {!phoneContext && !accessoryContext && view.type === "all" && (
             <>
               <li aria-hidden="true">/</li>
               <li className="font-semibold uppercase tracking-wide text-brand-black">
@@ -281,8 +354,11 @@ function ShopCatalogContent({ initialView }: { initialView: ShopView }) {
                 key={item.href}
                 href={categoryHref(item.href)}
                 className={`shrink-0 whitespace-nowrap border px-4 py-2 text-[11px] font-bold uppercase tracking-wide ${
-                  isCategoryActive(item.match)
-                    ? "border-brand-black bg-brand-black text-white"
+                  isCategoryActive(
+                    item.match,
+                    "accessoryType" in item ? item.accessoryType : undefined
+                  )
+                    ? "border-brand-electric bg-brand-electric text-white"
                     : "border-brand-gray-300 bg-white text-brand-gray-700"
                 }`}
               >
@@ -304,8 +380,11 @@ function ShopCatalogContent({ initialView }: { initialView: ShopView }) {
                 <Link
                   href={categoryHref(item.href)}
                   className={`mobilax-sidebar-link ${
-                    isCategoryActive(item.match)
-                      ? "bg-brand-black text-white"
+                    isCategoryActive(
+                      item.match,
+                      "accessoryType" in item ? item.accessoryType : undefined
+                    )
+                      ? "bg-brand-electric text-white"
                       : "text-brand-gray-700 hover:bg-brand-gray-50"
                   }`}
                 >

@@ -10,6 +10,7 @@ import {
   ReactNode,
 } from "react";
 import { CartItem, Product } from "@/types";
+import { getEffectivePrice } from "@/lib/product-pricing";
 
 interface CartContextValue {
   items: CartItem[];
@@ -69,7 +70,6 @@ export function CartProvider({ children }: { children: ReactNode }) {
       }
       return [...prev, { product, quantity: 1 }];
     });
-    setIsOpen(true);
   }, []);
 
   const removeItem = useCallback((productId: string) => {
@@ -104,7 +104,11 @@ export function CartProvider({ children }: { children: ReactNode }) {
   );
 
   const total = useMemo(
-    () => items.reduce((sum, item) => sum + item.product.price * item.quantity, 0),
+    () =>
+      items.reduce(
+        (sum, item) => sum + getEffectivePrice(item.product) * item.quantity,
+        0
+      ),
     [items]
   );
 

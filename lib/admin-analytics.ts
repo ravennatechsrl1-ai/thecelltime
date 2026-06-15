@@ -1,19 +1,12 @@
 import { AdminDashboardStats, Product, ShopOrder } from "@/types";
+import { mapProductRow } from "@/lib/map-product";
+import { isOnPromotion } from "@/lib/product-pricing";
 import { getSupabaseClientSafe } from "@/utils/supabase";
 
 const LOW_STOCK_THRESHOLD = 5;
 
 function mapProduct(row: Record<string, unknown>): Product {
-  return {
-    id: row.id as string,
-    name: row.name as string,
-    price: Number(row.price),
-    category: row.category as Product["category"],
-    condition: row.condition as Product["condition"],
-    brand: row.brand as string,
-    image_url: row.image_url as string,
-    stock: Number(row.stock),
-  };
+  return mapProductRow(row);
 }
 
 function mapOrder(row: Record<string, unknown>): ShopOrder {
@@ -60,6 +53,7 @@ export async function fetchAdminDashboardStats(): Promise<AdminDashboardStats> {
     activeRepairs: 0,
     phonesInCatalog: 0,
     accessoriesInCatalog: 0,
+    promotedProductsCount: 0,
     revenueToday: 0,
     ordersToday: 0,
     averageOrderValue: 0,
@@ -175,6 +169,7 @@ export async function fetchAdminDashboardStats(): Promise<AdminDashboardStats> {
     phonesInCatalog: products.filter((p) => p.category === "phones").length,
     accessoriesInCatalog: products.filter((p) => p.category === "accessories")
       .length,
+    promotedProductsCount: products.filter((p) => isOnPromotion(p)).length,
     revenueToday,
     ordersToday: ordersToday.length,
     averageOrderValue:

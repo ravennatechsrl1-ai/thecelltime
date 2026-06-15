@@ -1,10 +1,14 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import SafeImage from "@/components/SafeImage";
+import ProductPriceDisplay, { PromotionBadge } from "@/components/ProductPriceDisplay";
+import { IconUser } from "@/components/icons/NavIcons";
 import { useAuth } from "@/components/AuthProvider";
 import { useLanguage } from "@/components/LanguageProvider";
 import { getCheckoutCustomer, redirectToCheckout } from "@/lib/client-checkout";
+import { getEffectivePrice } from "@/lib/product-pricing";
 import { Product } from "@/types";
 
 interface ProductCardProps {
@@ -18,7 +22,7 @@ export default function ProductCard({
   onAddToCart,
   variant = "grid",
 }: ProductCardProps) {
-  const { t, formatPrice } = useLanguage();
+  const { t } = useLanguage();
   const { user } = useAuth();
   const [buying, setBuying] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -30,6 +34,7 @@ export default function ProductCard({
         ? t.conditions.usedA
         : null;
   const outOfStock = product.stock <= 0;
+  const salePrice = getEffectivePrice(product);
 
   const widthClass =
     variant === "carousel"
@@ -48,12 +53,12 @@ export default function ProductCard({
             {
               productId: product.id,
               name: product.name,
-              price: product.price,
+              price: salePrice,
               quantity: 1,
               imageUrl: product.image_url,
             },
           ],
-          totalAmount: product.price,
+          totalAmount: salePrice,
           customer: getCheckoutCustomer(user),
         },
         t.cart.checkoutError
@@ -79,13 +84,14 @@ export default function ProductCard({
         />
         {conditionLabel && (
           <span
-            className={`absolute left-0 top-0 ${
+            className={`absolute left-0 top-0 z-10 ${
               product.condition === "new" ? "badge-new" : "badge-used"
             }`}
           >
             {conditionLabel}
           </span>
         )}
+        <PromotionBadge product={product} />
       </div>
 
       <div className="flex flex-1 flex-col border-t border-brand-gray-200 p-3">
@@ -96,20 +102,24 @@ export default function ProductCard({
           {product.name}
         </h2>
 
-        <div className="mt-2 flex items-baseline justify-between gap-2">
-          <p className="text-base font-bold text-brand-black sm:text-lg">
-            {formatPrice(product.price)}
-          </p>
+        <div className="mt-2.5">
+          <ProductPriceDisplay product={product} size="lg" />
         </div>
 
-        <p className="mt-1.5 flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-wide">
+        <p className="mt-2 flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-wide">
           <span
             className={`inline-block h-1.5 w-1.5 rounded-full ${
-              outOfStock ? "bg-red-500" : "bg-emerald-500"
+              outOfStock
+                ? "bg-red-500"
+                : product.stock <= 5
+                  ? "bg-amber-500"
+                  : "bg-emerald-500"
             }`}
           />
-          <span className={outOfStock ? "text-red-600" : "text-emerald-700"}>
-            {outOfStock ? t.common.soldOut : t.shop.inStockLabel}
+          <span className={outOfStock ? "text-red-600" : product.stock <= 5 ? "text-amber-600" : "text-emerald-700"}>
+            {outOfStock
+              ? t.common.soldOut
+              : t.shop.stockAvailable.replace("{count}", String(product.stock))}
           </span>
         </p>
 
@@ -119,23 +129,36 @@ export default function ProductCard({
           </p>
         )}
 
-        <div className="mt-3 space-y-2">
-          <button
-            type="button"
-            onClick={onAddToCart}
-            disabled={outOfStock}
-            className="btn-secondary text-[10px] sm:text-xs disabled:cursor-not-allowed disabled:opacity-40"
-          >
-            {t.shop.addToCart}
-          </button>
-          <button
-            type="button"
-            onClick={handleBuyNow}
-            disabled={outOfStock || buying}
-            className="btn-primary text-[10px] sm:text-xs disabled:cursor-not-allowed disabled:opacity-40"
-          >
-            {buying ? t.cart.redirecting : t.shop.buyNow}
-          </button>
+        <div className="mt-3">
+          {user ? (
+            outOfStock ? null : (
+              <div className="space-y-2">
+                <button
+                  type="button"
+                  onClick={onAddToCart}
+                  className="btn-secondary text-[10px] sm:text-xs"
+                >
+                  {t.shop.addToCart}
+                </button>
+                <button
+                  type="button"
+                  onClick={handleBuyNow}
+                  disabled={buying}
+                  className="btn-primary text-[10px] sm:text-xs disabled:cursor-not-allowed disabled:opacity-40"
+                >
+                  {buying ? t.cart.redirecting : t.shop.buyNow}
+                </button>
+              </div>
+            )
+          ) : (
+            <Link
+              href="/login"
+              className="flex min-h-[44px] items-center justify-center gap-1.5 border border-brand-gray-300 bg-white px-3 py-2 text-[10px] font-bold uppercase tracking-wide text-brand-navy transition-all duration-200 hover:border-brand-electric hover:text-brand-electric sm:text-xs"
+            >
+              <IconUser className="h-3.5 w-3.5" />
+              {t.nav.signIn}
+            </Link>
+          )}
         </div>
       </div>
     </article>

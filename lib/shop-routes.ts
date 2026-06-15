@@ -1,18 +1,25 @@
+import { AccessoryType, accessorySlugToType, accessoryTypeToSlug } from "@/lib/admin-catalog";
 import { isPhoneBrandSlug, PhoneBrandSlug } from "@/lib/phone-brands";
 import { ShopFilter } from "@/types";
 
 export type ShopView =
   | { type: "all" }
+  | { type: "promotions" }
   | { type: "phones" }
   | { type: "phones-new" }
   | { type: "phones-used" }
   | { type: "phones-new-brand"; brand: PhoneBrandSlug }
   | { type: "phones-used-brand"; brand: PhoneBrandSlug }
-  | { type: "accessories" };
+  | { type: "accessories" }
+  | { type: "accessories-type"; accessoryType: AccessoryType };
 
 export function parseShopSegments(segments?: string[]): ShopView | null {
   if (!segments || segments.length === 0) {
     return { type: "all" };
+  }
+
+  if (segments.length === 1 && segments[0] === "promotions") {
+    return { type: "promotions" };
   }
 
   if (segments.length === 1 && segments[0] === "phones") {
@@ -21,6 +28,13 @@ export function parseShopSegments(segments?: string[]): ShopView | null {
 
   if (segments.length === 1 && segments[0] === "accessories") {
     return { type: "accessories" };
+  }
+
+  if (segments[0] === "accessories" && segments.length === 2) {
+    const accessoryType = accessorySlugToType(segments[1]);
+    if (accessoryType) {
+      return { type: "accessories-type", accessoryType };
+    }
   }
 
   if (segments[0] === "phones" && segments.length === 2) {
@@ -43,6 +57,8 @@ export function shopViewToPath(view: ShopView): string {
   switch (view.type) {
     case "all":
       return "/shop";
+    case "promotions":
+      return "/shop/promotions";
     case "phones":
       return "/shop/phones";
     case "phones-new":
@@ -55,6 +71,8 @@ export function shopViewToPath(view: ShopView): string {
       return `/shop/phones/used/${view.brand}`;
     case "accessories":
       return "/shop/accessories";
+    case "accessories-type":
+      return `/shop/accessories/${accessoryTypeToSlug(view.accessoryType)}`;
   }
 }
 
@@ -67,12 +85,21 @@ export function shopViewToFilter(view: ShopView): ShopFilter {
     case "phones-used-brand":
       return "phones-used";
     case "accessories":
+    case "accessories-type":
       return "accessories";
     case "phones":
       return "all";
     default:
       return "all";
   }
+}
+
+export function isAccessoryShopView(view: ShopView): boolean {
+  return view.type === "accessories" || view.type === "accessories-type";
+}
+
+export function isPromotionShopView(view: ShopView): boolean {
+  return view.type === "promotions";
 }
 
 export function isPhoneShopView(view: ShopView): boolean {

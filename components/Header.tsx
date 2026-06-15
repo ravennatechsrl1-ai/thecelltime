@@ -8,6 +8,7 @@ import { useLanguage } from "@/components/LanguageProvider";
 import LanguageSwitcher from "@/components/LanguageSwitcher";
 import MobileDrawer from "@/components/MobileDrawer";
 import NavDropdown from "@/components/NavDropdown";
+import SiteLogo from "@/components/SiteLogo";
 import { useAuth } from "@/components/AuthProvider";
 import { useHydrated } from "@/hooks/useHydrated";
 import { buildPhoneNavGroups } from "@/lib/nav-phone-brands";
@@ -23,7 +24,6 @@ import {
   IconRepair,
   IconSearch,
   IconUser,
-  LogoMark,
   NavIconWrap,
 } from "@/components/icons/NavIcons";
 
@@ -43,7 +43,7 @@ export default function Header() {
         id: "brands",
         label: t.nav.brands,
         icon: (
-          <NavIconWrap>
+          <NavIconWrap inverted>
             <IconBrands className="h-4 w-4" />
           </NavIconWrap>
         ),
@@ -57,7 +57,7 @@ export default function Header() {
         id: "repair",
         label: t.nav.repair,
         icon: (
-          <NavIconWrap>
+          <NavIconWrap inverted>
             <IconRepair className="h-4 w-4" />
           </NavIconWrap>
         ),
@@ -70,46 +70,46 @@ export default function Header() {
         id: "protection",
         label: t.nav.protection,
         icon: (
-          <NavIconWrap>
+          <NavIconWrap inverted>
             <IconProtection className="h-4 w-4" />
           </NavIconWrap>
         ),
         items: [
-          { href: "/shop/accessories", label: t.nav.cases },
-          { href: "/shop/accessories", label: t.nav.screenProtectors },
+          { href: "/shop/accessories/cases", label: t.nav.cases },
+          { href: "/shop/accessories/screen-protectors", label: t.nav.screenProtectors },
         ],
       },
       {
         id: "accessories",
         label: t.nav.accessoriesNav,
         icon: (
-          <NavIconWrap>
+          <NavIconWrap inverted>
             <IconAccessories className="h-4 w-4" />
           </NavIconWrap>
         ),
         items: [
-          { href: "/shop/accessories", label: t.nav.cables },
-          { href: "/shop/accessories", label: t.nav.chargers },
+          { href: "/shop/accessories/cables", label: t.nav.cables },
+          { href: "/shop/accessories/chargers", label: t.nav.chargers },
         ],
       },
       {
         id: "equipment",
         label: t.nav.equipment,
         icon: (
-          <NavIconWrap>
+          <NavIconWrap inverted>
             <IconEquipment className="h-4 w-4" />
           </NavIconWrap>
         ),
         items: [
-          { href: "/shop/accessories", label: t.nav.chargers },
-          { href: "/shop/accessories", label: t.nav.cables },
+          { href: "/shop/accessories/chargers", label: t.nav.chargers },
+          { href: "/shop/accessories/cables", label: t.nav.cables },
         ],
       },
       {
         id: "phone",
         label: t.nav.phone,
         icon: (
-          <NavIconWrap>
+          <NavIconWrap inverted>
             <IconPhone className="h-4 w-4" />
           </NavIconWrap>
         ),
@@ -119,14 +119,11 @@ export default function Header() {
         id: "promotions",
         label: t.nav.promotionsNav,
         icon: (
-          <NavIconWrap>
+          <NavIconWrap inverted>
             <IconPromotions className="h-4 w-4" />
           </NavIconWrap>
         ),
-        items: [
-          { href: "/shop/phones/used", label: t.nav.viewPromotions },
-          { href: "/shop/accessories", label: t.nav.accessoriesNav },
-        ],
+        items: [{ href: "/shop/promotions", label: t.nav.viewPromotions }],
       },
     ],
     [t]
@@ -153,29 +150,24 @@ export default function Header() {
 
   return (
     <>
-      <header className="sticky top-0 z-40 bg-white shadow-sm">
+      <header className="sticky top-0 z-40 bg-black shadow-md">
         {/* Top row — logo, search, actions */}
-        <div className="border-b border-brand-gray-100">
-          <div className="container-app flex h-16 items-center gap-3 sm:gap-4">
+        <div className="border-b border-white/10">
+          <div className="container-app flex min-h-[4rem] items-center gap-3 py-2 sm:min-h-[4.5rem] sm:gap-4">
             <button
               type="button"
               className="flex h-10 w-10 flex-col items-center justify-center gap-1 lg:hidden"
               onClick={() => setDrawerOpen(true)}
               aria-label={t.nav.openMenu}
             >
-              <span className="block h-0.5 w-5 bg-brand-black" />
-              <span className="block h-0.5 w-5 bg-brand-black" />
-              <span className="block h-0.5 w-5 bg-brand-black" />
+              <span className="block h-0.5 w-5 bg-white" />
+              <span className="block h-0.5 w-5 bg-white" />
+              <span className="block h-0.5 w-5 bg-white" />
             </button>
 
-            <Link href="/" className="flex shrink-0 items-center gap-2">
-              <LogoMark className="h-9 w-9" />
-              <span className="text-xl font-black uppercase tracking-tight text-brand-navy">
-                TheCellTime
-              </span>
-            </Link>
+            <SiteLogo priority className="h-12 w-auto sm:h-14 md:h-16" />
 
-            <LanguageSwitcher />
+            <LanguageSwitcher inverted />
 
             <form
               onSubmit={handleSearch}
@@ -188,12 +180,12 @@ export default function Header() {
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   placeholder={t.nav.searchPlaceholder}
-                  className="h-11 w-full rounded-full border border-brand-gray-200 bg-brand-gray-50 pl-5 pr-12 text-sm text-brand-black placeholder:text-brand-gray-400 focus:border-brand-electric focus:outline-none focus:ring-1 focus:ring-brand-electric"
+                  className="h-11 w-full rounded-full border border-white/15 bg-white/10 pl-5 pr-12 text-sm text-white placeholder:text-white/50 transition-colors duration-200 focus:border-brand-electric focus:outline-none focus:ring-1 focus:ring-brand-electric"
                   suppressHydrationWarning
                 />
                 <button
                   type="submit"
-                  className="absolute right-1 flex h-9 w-9 items-center justify-center rounded-full bg-brand-gray-400 text-white transition-colors hover:bg-brand-navy"
+                  className="absolute right-1 flex h-9 w-9 items-center justify-center rounded-full bg-brand-electric text-white transition-all duration-200 hover:bg-brand-electric-dark"
                   aria-label={t.common.search}
                   suppressHydrationWarning
                 >
@@ -207,7 +199,7 @@ export default function Header() {
                 <button
                   type="button"
                   onClick={() => setAuthOpen((v) => !v)}
-                  className="flex h-10 w-10 items-center justify-center rounded-full bg-brand-gray-100 text-brand-gray-600 transition-colors hover:bg-brand-gray-200"
+                  className="flex h-10 w-10 items-center justify-center rounded-full bg-white/10 text-white transition-colors hover:bg-white/20"
                   aria-label={t.nav.account}
                   aria-expanded={authOpen}
                 >
@@ -271,7 +263,7 @@ export default function Header() {
 
               <Link
                 href="/admin"
-                className="flex h-10 w-10 items-center justify-center rounded-full bg-brand-gray-100 text-brand-gray-600 transition-colors hover:bg-brand-gray-200"
+                className="flex h-10 w-10 items-center justify-center rounded-full bg-white/10 text-white transition-colors hover:bg-white/20"
                 aria-label={t.nav.admin}
               >
                 <IconAdmin className="h-4 w-4" />
@@ -280,12 +272,12 @@ export default function Header() {
               <button
                 type="button"
                 onClick={openCart}
-                className="relative flex h-10 w-10 items-center justify-center rounded-full bg-brand-gray-100 text-brand-gray-600 transition-colors hover:bg-brand-gray-200"
+                className="relative flex h-10 w-10 items-center justify-center rounded-full bg-white/10 text-white transition-colors hover:bg-white/20"
                 aria-label={`${t.cart.cartLabel}, ${itemCount}`}
               >
                 <IconCart className="h-4 w-4" />
                 {hydrated && itemCount > 0 && (
-                  <span className="absolute -right-0.5 -top-0.5 flex h-4 min-w-[16px] items-center justify-center rounded-full bg-brand-coral px-1 text-[9px] font-bold text-white">
+                  <span className="absolute -right-0.5 -top-0.5 flex h-4 min-w-[16px] items-center justify-center rounded-full bg-brand-electric px-1 text-[9px] font-bold text-white shadow-glow-electric">
                     {itemCount}
                   </span>
                 )}
@@ -305,12 +297,12 @@ export default function Header() {
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 placeholder={t.nav.searchPlaceholder}
-                className="h-11 w-full rounded-full border border-brand-gray-200 bg-brand-gray-50 pl-5 pr-12 text-sm focus:border-brand-electric focus:outline-none"
+                className="h-11 w-full rounded-full border border-white/15 bg-white/10 pl-5 pr-12 text-sm text-white placeholder:text-white/50 transition-colors duration-200 focus:border-brand-electric focus:outline-none focus:ring-1 focus:ring-brand-electric"
                 suppressHydrationWarning
               />
               <button
                 type="submit"
-                className="absolute right-1 flex h-9 w-9 items-center justify-center rounded-full bg-brand-gray-400 text-white"
+                className="absolute right-1 flex h-9 w-9 items-center justify-center rounded-full bg-brand-electric text-white transition-all duration-200 hover:bg-brand-electric-dark"
                 aria-label={t.common.search}
                 suppressHydrationWarning
               >
@@ -322,7 +314,7 @@ export default function Header() {
 
         {/* Bottom row — category nav with icons + dropdowns */}
         <nav
-          className="hidden border-b border-brand-gray-100 bg-white lg:block"
+          className="hidden border-b border-white/10 bg-black lg:block"
           aria-label={t.nav.mainNav}
         >
           <div className="container-app flex items-center justify-center gap-1 py-1">
@@ -333,6 +325,7 @@ export default function Header() {
                 icon={cat.icon}
                 items={"items" in cat ? cat.items : undefined}
                 groups={"groups" in cat ? cat.groups : undefined}
+                inverted
               />
             ))}
           </div>

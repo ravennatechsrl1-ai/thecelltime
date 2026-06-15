@@ -3,11 +3,13 @@
 import { useState } from "react";
 import Link from "next/link";
 import SafeImage from "@/components/SafeImage";
+import ProductPriceDisplay, { PromotionBadge } from "@/components/ProductPriceDisplay";
 import { IconUser } from "@/components/icons/NavIcons";
 import { useAuth } from "@/components/AuthProvider";
 import { useCart } from "@/components/CartProvider";
 import { useLanguage } from "@/components/LanguageProvider";
 import { getCheckoutCustomer, redirectToCheckout } from "@/lib/client-checkout";
+import { getEffectivePrice } from "@/lib/product-pricing";
 import { Product } from "@/types";
 
 interface MobilaxGridProductCardProps {
@@ -17,13 +19,14 @@ interface MobilaxGridProductCardProps {
 export default function MobilaxGridProductCard({
   product,
 }: MobilaxGridProductCardProps) {
-  const { t, formatPrice } = useLanguage();
+  const { t } = useLanguage();
   const { user } = useAuth();
   const { addItem } = useCart();
   const [buying, setBuying] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const outOfStock = product.stock <= 0;
+  const salePrice = getEffectivePrice(product);
   const gradeBadge =
     product.condition === "used"
       ? "A"
@@ -49,12 +52,12 @@ export default function MobilaxGridProductCard({
             {
               productId: product.id,
               name: product.name,
-              price: product.price,
+              price: salePrice,
               quantity: 1,
               imageUrl: product.image_url,
             },
           ],
-          totalAmount: product.price,
+          totalAmount: salePrice,
           customer: getCheckoutCustomer(user),
         },
         t.cart.checkoutError
@@ -84,12 +87,13 @@ export default function MobilaxGridProductCard({
             className={`absolute right-2 top-2 px-1.5 py-0.5 text-[9px] font-bold uppercase ${
               product.condition === "used"
                 ? "bg-emerald-500 text-white"
-                : "bg-brand-black text-white"
+                : "bg-brand-electric text-white"
             }`}
           >
             {gradeBadge}
           </span>
         )}
+        <PromotionBadge product={product} />
       </div>
 
       <div className="flex flex-1 flex-col border-t border-brand-gray-100 p-2.5">
@@ -97,17 +101,38 @@ export default function MobilaxGridProductCard({
           {product.name}
         </h3>
 
+        <div className="mt-2.5">
+          <ProductPriceDisplay product={product} size="sm" />
+        </div>
+
+        <p className="mt-2 flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-wide">
+          <span
+            className={`inline-block h-1.5 w-1.5 rounded-full ${
+              outOfStock
+                ? "bg-red-500"
+                : product.stock <= 5
+                  ? "bg-amber-500"
+                  : "bg-emerald-500"
+            }`}
+          />
+          <span
+            className={
+              outOfStock
+                ? "text-red-600"
+                : product.stock <= 5
+                  ? "text-amber-600"
+                  : "text-emerald-700"
+            }
+          >
+            {outOfStock
+              ? t.common.soldOut
+              : t.shop.stockAvailable.replace("{count}", String(product.stock))}
+          </span>
+        </p>
+
         {user ? (
           <>
-            <p className="mt-2 text-sm font-bold text-brand-navy">
-              {formatPrice(product.price)}
-            </p>
-
-            {outOfStock ? (
-              <p className="mt-auto pt-2 text-[10px] font-bold uppercase tracking-wide text-red-600">
-                {t.common.soldOut}
-              </p>
-            ) : (
+            {outOfStock ? null : (
               <div className="mt-auto space-y-1.5 pt-2">
                 {error && (
                   <p className="text-[9px] leading-snug text-red-600" role="alert">
@@ -117,7 +142,7 @@ export default function MobilaxGridProductCard({
                 <button
                   type="button"
                   onClick={handleAddToCart}
-                  className="flex min-h-[34px] w-full items-center justify-center border border-brand-gray-300 bg-white px-2 py-1.5 text-[9px] font-bold uppercase tracking-wide text-brand-gray-700 transition-colors hover:border-brand-black hover:text-brand-black sm:text-[10px]"
+                  className="flex min-h-[34px] w-full items-center justify-center border border-brand-gray-300 bg-white px-2 py-1.5 text-[9px] font-bold uppercase tracking-wide text-brand-navy transition-all duration-200 hover:border-brand-electric hover:text-brand-electric sm:text-[10px]"
                 >
                   {t.shop.addToCart}
                 </button>
@@ -125,7 +150,7 @@ export default function MobilaxGridProductCard({
                   type="button"
                   onClick={handleBuyNow}
                   disabled={buying}
-                  className="flex min-h-[34px] w-full items-center justify-center bg-brand-black px-2 py-1.5 text-[9px] font-bold uppercase tracking-wide text-white transition-colors hover:bg-brand-gray-800 disabled:cursor-not-allowed disabled:opacity-60 sm:text-[10px]"
+                  className="flex min-h-[34px] w-full items-center justify-center bg-brand-electric px-2 py-1.5 text-[9px] font-bold uppercase tracking-wide text-white transition-all duration-200 hover:bg-brand-electric-dark hover:shadow-glow-electric disabled:cursor-not-allowed disabled:opacity-60 sm:text-[10px]"
                 >
                   {buying ? t.cart.redirecting : t.shop.buyNow}
                 </button>
@@ -135,7 +160,7 @@ export default function MobilaxGridProductCard({
         ) : (
           <Link
             href="/login"
-            className="mt-auto flex min-h-[36px] items-center justify-center gap-1.5 border border-brand-gray-300 bg-white px-2 py-2 text-[10px] font-bold uppercase tracking-wide text-brand-gray-700 transition-colors hover:border-brand-black hover:text-brand-black"
+            className="mt-auto flex min-h-[36px] items-center justify-center gap-1.5 border border-brand-gray-300 bg-white px-2 py-2 pt-2 text-[10px] font-bold uppercase tracking-wide text-brand-navy transition-all duration-200 hover:border-brand-electric hover:text-brand-electric"
           >
             <IconUser className="h-3.5 w-3.5" />
             {t.nav.signIn}

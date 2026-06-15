@@ -48,7 +48,7 @@ export default function HeroCarousel() {
         cta: t.home.carousel1Cta,
         href: "/shop/phones/new",
         image: HERO_IMAGES.phones,
-        imageBg: "from-[#dbeafe] via-[#eff6ff] to-[#e0e7ff]",
+        imageBg: "from-[#dbeafe] via-[#eff6ff] to-[#e8f0fe]",
         badge: "5G Ready",
         stat: "12+",
         imageFrame: "h-[96%] w-[92%]",
@@ -63,7 +63,7 @@ export default function HeroCarousel() {
         cta: t.home.carousel2Cta,
         href: "/shop/accessories",
         image: HERO_IMAGES.accessories,
-        imageBg: "from-[#e0f2fe] via-[#f0f9ff] to-[#dbeafe]",
+        imageBg: "from-[#e8f0fe] via-[#f0f6ff] to-[#dbeafe]",
         badge: "MagSafe",
         stat: "40+",
         imageFrame: "h-[94%] w-[98%] scale-110",
@@ -76,9 +76,9 @@ export default function HeroCarousel() {
         titleAccent: t.home.carousel3TitleAccent,
         description: t.home.carousel3Desc,
         cta: t.home.carousel3Cta,
-        href: "/shop/phones/used",
+        href: "/shop/promotions",
         image: HERO_IMAGES.promotions,
-        imageBg: "from-[#ede9fe] via-[#f5f3ff] to-[#dbeafe]",
+        imageBg: "from-[#dbeafe] via-[#eef4ff] to-[#e0ebfa]",
         badge: "Grade A",
         stat: "-30%",
         imageFrame: "h-[90%] w-[100%]",
@@ -166,7 +166,7 @@ export default function HeroCarousel() {
             <button
               type="button"
               onClick={() => goTo(active - 1)}
-              className="absolute left-3 top-1/2 z-10 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full bg-white text-brand-gray-700 shadow-lg transition-colors hover:bg-brand-gray-50 lg:-left-4"
+              className="absolute left-3 top-1/2 z-10 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full bg-white text-brand-gray-700 shadow-lg transition-all duration-200 hover:bg-brand-electric hover:text-white lg:-left-4"
               aria-label={t.nav.prevSlide}
             >
               <IconChevronLeft className="h-4 w-4" />
@@ -174,7 +174,7 @@ export default function HeroCarousel() {
             <button
               type="button"
               onClick={() => goTo(active + 1)}
-              className="absolute right-3 top-1/2 z-10 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full bg-white text-brand-gray-700 shadow-lg transition-colors hover:bg-brand-gray-50 lg:-right-4"
+              className="absolute right-3 top-1/2 z-10 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full bg-white text-brand-gray-700 shadow-lg transition-all duration-200 hover:bg-brand-electric hover:text-white lg:-right-4"
               aria-label={t.nav.nextSlide}
             >
               <IconChevronRight className="h-4 w-4" />
@@ -225,7 +225,7 @@ export default function HeroCarousel() {
 
                   <Link
                     href={s.href}
-                    className="mt-8 inline-flex min-h-[48px] items-center rounded-full bg-brand-electric px-8 py-3 text-sm font-bold text-white shadow-lg shadow-brand-electric/25 transition-all hover:bg-brand-navy hover:shadow-brand-navy/20"
+                    className="mt-8 inline-flex min-h-[48px] items-center rounded-full bg-brand-electric px-8 py-3 text-sm font-bold text-white shadow-glow-electric transition-all duration-200 hover:bg-brand-electric-dark hover:shadow-[0_6px_28px_rgba(30,107,255,0.35)]"
                   >
                     {s.cta}
                   </Link>

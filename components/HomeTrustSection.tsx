@@ -77,10 +77,12 @@ export default function HomeTrustSection() {
           {reasons.map((reason, index) => (
             <article
               key={reason.title}
-              className="flex gap-4 border border-brand-gray-200 bg-[#fafafa] p-5 sm:p-6"
+              className="group flex gap-4 border border-brand-gray-200 bg-white p-5 transition-all duration-200 hover:-translate-y-0.5 hover:border-brand-electric/30 hover:shadow-card-hover sm:p-6"
             >
               <div className="flex flex-col items-center gap-2">
-                <NavIconWrap>{reason.icon}</NavIconWrap>
+                <NavIconWrap className="transition-colors duration-200 group-hover:bg-brand-electric/10 group-hover:text-brand-electric">
+                  {reason.icon}
+                </NavIconWrap>
                 <span className="text-[10px] font-bold tabular-nums text-brand-gray-400">
                   {String(index + 1).padStart(2, "0")}
                 </span>
@@ -101,11 +103,13 @@ export default function HomeTrustSection() {
           {stats.map((stat) => (
             <div
               key={stat.label}
-              className="flex items-center gap-4 bg-white px-5 py-6 sm:px-6"
+              className="group flex items-center gap-4 bg-white px-5 py-6 transition-colors duration-200 hover:bg-brand-electric/[0.03] sm:px-6"
             >
-              <NavIconWrap>{stat.icon}</NavIconWrap>
+              <NavIconWrap className="transition-colors duration-200 group-hover:bg-brand-electric/10 group-hover:text-brand-electric">
+                {stat.icon}
+              </NavIconWrap>
               <div>
-                <p className="text-2xl font-black tabular-nums tracking-tight text-brand-navy">
+                <p className="text-2xl font-black tabular-nums tracking-tight text-brand-navy transition-colors duration-200 group-hover:text-brand-electric">
                   {stat.value}
                 </p>
                 <p className="mt-0.5 text-[10px] font-bold uppercase tracking-widest text-brand-gray-500">

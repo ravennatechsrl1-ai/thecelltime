@@ -6,14 +6,15 @@ import HeroCarousel from "@/components/HeroCarousel";
 import HomeCategoryNav from "@/components/HomeCategoryNav";
 import HomeMobilaxDualCatalog from "@/components/HomeMobilaxDualCatalog";
 import HomeProductSection from "@/components/HomeProductSection";
+import HomeBrandLogosSlider from "@/components/HomeBrandLogosSlider";
 import HomeTrustSection from "@/components/HomeTrustSection";
 import { useLanguage } from "@/components/LanguageProvider";
-import { MOCK_PRODUCTS } from "@/lib/constants";
+import { isOnPromotion } from "@/lib/product-pricing";
 import { Product } from "@/types";
 
 export default function HomePage() {
   const { t } = useLanguage();
-  const [products, setProducts] = useState<Product[]>(MOCK_PRODUCTS);
+  const [products, setProducts] = useState<Product[]>([]);
 
   useEffect(() => {
     async function fetchProducts() {
@@ -21,10 +22,10 @@ export default function HomePage() {
         const response = await fetch("/api/products");
         if (response.ok) {
           const data: { products: Product[] } = await response.json();
-          if (data.products.length > 0) setProducts(data.products);
+          setProducts(data.products ?? []);
         }
       } catch {
-        // fallback mock
+        // keep empty catalog on failure
       }
     }
     fetchProducts();
@@ -41,10 +42,7 @@ export default function HomePage() {
   );
 
   const promotions = useMemo(
-    () =>
-      products
-        .filter((p) => p.condition === "used" || p.category === "accessories")
-        .slice(0, 6),
+    () => products.filter((p) => isOnPromotion(p)).slice(0, 6),
     [products]
   );
 
@@ -63,11 +61,12 @@ export default function HomePage() {
 
       <HomeProductSection
         title={t.home.promotions}
-        seeAllHref="/shop/phones/used"
+        seeAllHref="/shop/promotions"
         seeAllLabel={t.home.seeAll}
         products={promotions}
-        accent="coral"
       />
+
+      <HomeBrandLogosSlider />
 
       <HomeTrustSection />
     </>

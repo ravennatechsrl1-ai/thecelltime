@@ -9,11 +9,11 @@
   }
 
   body {
-    @apply bg-[#f7f7f7] text-brand-black antialiased;
+    @apply bg-brand-gray-50 text-brand-navy antialiased;
   }
 
   ::selection {
-    @apply bg-brand-black text-white;
+    @apply bg-brand-electric/20 text-brand-navy;
   }
 }
 
@@ -23,19 +23,19 @@
   }
 
   .btn-primary {
-    @apply inline-flex min-h-[44px] w-full items-center justify-center rounded-none border border-brand-black bg-brand-black px-5 py-3 text-sm font-semibold uppercase tracking-wide text-white transition-colors hover:bg-brand-gray-800 active:scale-[0.99];
+    @apply inline-flex min-h-[44px] w-full items-center justify-center rounded-none border border-brand-electric bg-brand-electric px-5 py-3 text-sm font-semibold uppercase tracking-wide text-white shadow-sm transition-all duration-200 hover:border-brand-electric-dark hover:bg-brand-electric-dark hover:shadow-glow-electric active:scale-[0.99];
   }
 
   .btn-secondary {
-    @apply inline-flex min-h-[44px] w-full items-center justify-center rounded-none border border-brand-gray-300 bg-white px-5 py-3 text-sm font-semibold uppercase tracking-wide text-brand-black transition-colors hover:border-brand-black active:scale-[0.99];
+    @apply inline-flex min-h-[44px] w-full items-center justify-center rounded-none border border-brand-gray-300 bg-white px-5 py-3 text-sm font-semibold uppercase tracking-wide text-brand-navy transition-all duration-200 hover:border-brand-electric hover:text-brand-electric active:scale-[0.99];
   }
 
   .input-field {
-    @apply min-h-[44px] w-full rounded-none border border-brand-gray-300 bg-white px-4 py-3 text-sm text-brand-black placeholder:text-brand-gray-400 focus:border-brand-black focus:outline-none focus:ring-1 focus:ring-brand-black;
+    @apply min-h-[44px] w-full rounded-none border border-brand-gray-300 bg-white px-4 py-3 text-sm text-brand-navy placeholder:text-brand-gray-400 transition-colors duration-200 focus:border-brand-electric focus:outline-none focus:ring-1 focus:ring-brand-electric;
   }
 
   .card-frame {
-    @apply border border-brand-gray-200 bg-white shadow-card transition-shadow hover:shadow-card-hover;
+    @apply border border-brand-gray-200 bg-white shadow-card transition-all duration-200 hover:-translate-y-0.5 hover:border-brand-electric/20 hover:shadow-card-hover;
   }
 
   .badge {
@@ -43,7 +43,7 @@
   }
 
   .badge-new {
-    @apply badge bg-brand-black text-white;
+    @apply badge bg-brand-electric text-white;
   }
 
   .badge-used {
@@ -72,7 +72,7 @@
   }
 
   .mobilax-product-card {
-    @apply border border-brand-gray-200 bg-white transition-shadow hover:shadow-card-hover;
+    @apply border border-brand-gray-200 bg-white shadow-card transition-all duration-200 hover:-translate-y-0.5 hover:border-brand-electric/25 hover:shadow-card-hover;
   }
 
   .mobilax-section-header {
@@ -80,7 +80,7 @@
   }
 
   .mobilax-category-tile {
-    @apply flex min-h-[72px] flex-col items-start justify-center border border-brand-gray-200 bg-white px-4 py-3 transition-colors hover:border-brand-black sm:min-h-[88px] sm:px-5;
+    @apply flex min-h-[72px] flex-col items-start justify-center border border-brand-gray-200 bg-white px-4 py-3 transition-all duration-200 hover:-translate-y-0.5 hover:border-brand-electric/40 hover:shadow-card-hover sm:min-h-[88px] sm:px-5;
   }
 
   .mobilax-sidebar {
@@ -88,7 +88,7 @@
   }
 
   .mobilax-sidebar-link {
-    @apply flex min-h-[44px] w-full items-center border-b border-brand-gray-100 px-4 text-left text-xs font-semibold uppercase tracking-wide transition-colors last:border-b-0;
+    @apply flex min-h-[44px] w-full items-center border-b border-brand-gray-100 px-4 text-left text-xs font-semibold uppercase tracking-wide transition-colors duration-200 last:border-b-0 hover:bg-brand-electric/5 hover:text-brand-electric;
   }
 
   .mobilax-toolbar {
@@ -96,10 +96,10 @@
   }
 
   .btn-hero-primary {
-    @apply inline-flex min-h-[48px] items-center justify-center bg-brand-coral px-8 py-3 text-sm font-bold uppercase tracking-wide text-white shadow-lg shadow-brand-coral/30 transition-all hover:bg-orange-500 hover:shadow-brand-coral/40 active:scale-[0.98];
+    @apply inline-flex min-h-[48px] items-center justify-center bg-brand-electric px-8 py-3 text-sm font-bold uppercase tracking-wide text-white shadow-glow-electric transition-all duration-200 hover:bg-brand-electric-dark hover:shadow-[0_6px_28px_rgba(30,107,255,0.35)] active:scale-[0.98];
   }
 
   .btn-hero-secondary {
-    @apply inline-flex min-h-[48px] items-center justify-center border-2 border-white/40 bg-white/10 px-8 py-3 text-sm font-bold uppercase tracking-wide text-white backdrop-blur-sm transition-all hover:border-white hover:bg-white/20 active:scale-[0.98];
+    @apply inline-flex min-h-[48px] items-center justify-center border-2 border-white/40 bg-white/10 px-8 py-3 text-sm font-bold uppercase tracking-wide text-white backdrop-blur-sm transition-all duration-200 hover:border-brand-electric-light hover:bg-white/15 active:scale-[0.98];
   }
 }

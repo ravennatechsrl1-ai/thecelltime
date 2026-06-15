@@ -1,22 +1,26 @@
 "use client";
 
-import { FormEvent, ReactNode, useCallback, useEffect, useMemo, useState } from "react";
+import { FormEvent, useCallback, useEffect, useMemo, useState } from "react";
+import SiteLogo from "@/components/SiteLogo";
+import {
+  IconCustomers,
+  IconDashboard,
+  IconOrders,
+  IconProducts,
+  IconPromotion,
+  IconRepair,
+} from "@/components/admin/AdminStatIcons";
 import AdminShell, { AdminView } from "@/components/admin/AdminShell";
 import CustomersPanel from "@/components/admin/CustomersPanel";
 import DashboardOverview from "@/components/admin/DashboardOverview";
 import OrdersPanel from "@/components/admin/OrdersPanel";
 import ProductsPanel from "@/components/admin/ProductsPanel";
+import PromotionsPanel from "@/components/admin/PromotionsPanel";
 import RepairsPanel from "@/components/admin/RepairsPanel";
 import { useLanguage } from "@/components/LanguageProvider";
 import { AdminDashboardStats } from "@/types";
 
-function NavIcon({ children }: { children: ReactNode }) {
-  return (
-    <svg viewBox="0 0 20 20" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="1.5" aria-hidden="true">
-      {children}
-    </svg>
-  );
-}
+const navIconClass = "h-4 w-4";
 
 export default function AdminPage() {
   const { t } = useLanguage();
@@ -33,54 +37,39 @@ export default function AdminPage() {
       {
         id: "dashboard" as const,
         label: t.admin.navDashboard,
-        icon: (
-          <NavIcon>
-            <rect x="3" y="3" width="6" height="6" rx="0.5" />
-            <rect x="11" y="3" width="6" height="6" rx="0.5" />
-            <rect x="3" y="11" width="6" height="6" rx="0.5" />
-            <rect x="11" y="11" width="6" height="6" rx="0.5" />
-          </NavIcon>
-        ),
+        icon: <IconDashboard className={navIconClass} />,
       },
       {
         id: "products" as const,
         label: t.admin.navProducts,
-        icon: (
-          <NavIcon>
-            <path d="M4 7l6-3 6 3v6l-6 3-6-3V7z" />
-          </NavIcon>
-        ),
+        badge: stats?.lowStockCount,
+        icon: <IconProducts className={navIconClass} />,
+      },
+      {
+        id: "promotions" as const,
+        label: t.admin.navPromotions,
+        badge: stats?.promotedProductsCount,
+        icon: <IconPromotion className={navIconClass} />,
       },
       {
         id: "orders" as const,
         label: t.admin.navOrders,
-        icon: (
-          <NavIcon>
-            <path d="M3 5h14M3 10h14M3 15h10" strokeLinecap="round" />
-          </NavIcon>
-        ),
+        badge: stats?.totalOrders,
+        icon: <IconOrders className={navIconClass} />,
       },
       {
         id: "customers" as const,
         label: t.admin.navCustomers,
-        icon: (
-          <NavIcon>
-            <circle cx="10" cy="7" r="3" />
-            <path d="M4 17c0-3.3 2.7-6 6-6s6 2.7 6 6" strokeLinecap="round" />
-          </NavIcon>
-        ),
+        icon: <IconCustomers className={navIconClass} />,
       },
       {
         id: "repairs" as const,
         label: t.admin.navRepairs,
-        icon: (
-          <NavIcon>
-            <path d="M14 4l2 2-8 8H6v-2l8-8z" strokeLinejoin="round" />
-          </NavIcon>
-        ),
+        badge: stats?.activeRepairs,
+        icon: <IconRepair className={navIconClass} />,
       },
     ],
-    [t]
+    [t, stats]
   );
 
   const loadStats = useCallback(async () => {
@@ -145,19 +134,33 @@ export default function AdminPage() {
 
   if (!authenticated) {
     return (
-      <div className="container-app flex min-h-[60vh] items-center justify-center py-10">
+      <div className="relative flex min-h-[calc(100vh-80px)] items-center justify-center overflow-hidden bg-gradient-to-br from-brand-navy via-[#132238] to-brand-navy-light px-4 py-12">
+        <div className="pointer-events-none absolute -left-20 top-10 h-64 w-64 rounded-full bg-brand-electric/20 blur-3xl" />
+        <div className="pointer-events-none absolute -bottom-20 -right-10 h-72 w-72 rounded-full bg-violet-600/15 blur-3xl" />
+
         <form
           onSubmit={handleLogin}
-          className="w-full max-w-sm border border-brand-gray-200 bg-white p-6 shadow-sm sm:p-8"
+          className="relative w-full max-w-md overflow-hidden rounded-2xl border border-white/10 bg-white/5 p-6 shadow-2xl backdrop-blur-md sm:p-8"
         >
-          <p className="section-title mb-2">{t.admin.restricted}</p>
-          <h1 className="heading-lg text-xl sm:text-2xl">{t.admin.title}</h1>
-          <p className="mt-2 text-sm text-brand-gray-600">{t.admin.loginDesc}</p>
+          <div className="mb-6 flex flex-col items-center text-center">
+            <SiteLogo className="h-12 w-auto" linked={false} />
+            <p className="mt-4 flex items-center gap-2 text-[10px] font-bold uppercase tracking-[0.25em] text-brand-electric-light">
+              <span className="inline-flex h-2 w-2 animate-pulse rounded-full bg-emerald-400" />
+              {t.admin.hubBadge}
+            </p>
+            <h1 className="mt-2 text-2xl font-black uppercase tracking-tight text-white">
+              {t.admin.title}
+            </h1>
+            <p className="mt-2 text-sm text-white/55">{t.admin.loginDesc}</p>
+            <p className="mt-1 text-[10px] font-semibold uppercase tracking-widest text-white/35">
+              {t.admin.loginSecure}
+            </p>
+          </div>
 
-          <div className="mt-6">
+          <div>
             <label
               htmlFor="admin-password"
-              className="mb-2 block text-xs font-semibold uppercase tracking-wide text-brand-gray-500"
+              className="mb-2 block text-xs font-bold uppercase tracking-wide text-white/50"
             >
               {t.admin.password}
             </label>
@@ -166,14 +169,14 @@ export default function AdminPage() {
               type="password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              className="input-field"
+              className="w-full rounded-lg border border-white/15 bg-white/10 px-4 py-3 text-white placeholder:text-white/30 outline-none transition-colors focus:border-brand-electric focus:ring-2 focus:ring-brand-electric/30"
               required
               autoComplete="current-password"
             />
           </div>
 
           {authError && (
-            <p className="mt-3 text-sm text-red-600" role="alert">
+            <p className="mt-3 rounded-lg border border-rose-500/30 bg-rose-500/10 px-3 py-2 text-sm text-rose-300" role="alert">
               {authError}
             </p>
           )}
@@ -181,7 +184,7 @@ export default function AdminPage() {
           <button
             type="submit"
             disabled={authLoading}
-            className="btn-primary mt-6 disabled:opacity-50"
+            className="mt-6 w-full rounded-lg bg-gradient-to-r from-brand-electric to-brand-electric-dark px-4 py-3 text-sm font-bold uppercase tracking-wide text-white shadow-glow-electric transition-all duration-200 hover:-translate-y-0.5 hover:shadow-lg disabled:opacity-50"
           >
             {authLoading ? t.admin.verifying : t.admin.login}
           </button>
@@ -201,9 +204,15 @@ export default function AdminPage() {
       logoutLabel={t.admin.logout}
     >
       {activeView === "dashboard" && (
-        <DashboardOverview stats={stats} loading={statsLoading} />
+        <DashboardOverview
+          stats={stats}
+          loading={statsLoading}
+          onNavigate={setActiveView}
+          onRefresh={loadStats}
+        />
       )}
       {activeView === "products" && <ProductsPanel />}
+      {activeView === "promotions" && <PromotionsPanel />}
       {activeView === "orders" && <OrdersPanel />}
       {activeView === "customers" && <CustomersPanel />}
       {activeView === "repairs" && <RepairsPanel />}
