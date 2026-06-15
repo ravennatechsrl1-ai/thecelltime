@@ -21,7 +21,15 @@ export async function PATCH(
       );
     }
 
-    let promotionPercent: number | null = body.promotion_percent;
+    const raw = body.promotion_percent;
+    if (raw === undefined) {
+      return NextResponse.json(
+        { error: "promotion_percent is required." },
+        { status: 400 }
+      );
+    }
+
+    let promotionPercent: number | null = raw;
 
     if (promotionPercent === null || promotionPercent === 0) {
       promotionPercent = null;

@@ -277,7 +277,7 @@ function ShopCatalogContent({ initialView }: { initialView: ShopView }) {
     : accessoryContext
       ? accessoryCategories
       : promotionContext
-        ? topCategories.filter((item) => item.match.includes("promotions"))
+        ? topCategories.filter((item) => item.href === "/shop/promotions")
         : topCategories;
 
   return (
