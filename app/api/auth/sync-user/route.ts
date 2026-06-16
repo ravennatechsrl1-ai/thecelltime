@@ -17,8 +17,16 @@ export async function POST() {
       typeof user.user_metadata?.full_name === "string"
         ? user.user_metadata.full_name
         : null;
+    const address =
+      typeof user.user_metadata?.address === "string"
+        ? user.user_metadata.address
+        : null;
+    const phone =
+      typeof user.user_metadata?.phone === "string"
+        ? user.user_metadata.phone
+        : null;
 
-    await syncShopUser(supabase, user.id, user.email, fullName);
+    await syncShopUser(supabase, user.id, user.email, fullName, address, phone);
 
     return NextResponse.json({ ok: true });
   } catch (error) {

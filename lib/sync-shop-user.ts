@@ -4,7 +4,9 @@ export async function syncShopUser(
   supabase: SupabaseClient,
   userId: string,
   email: string,
-  fullName?: string | null
+  fullName?: string | null,
+  address?: string | null,
+  phone?: string | null
 ) {
   const { data: existing } = await supabase
     .from("shop_users")
@@ -18,6 +20,8 @@ export async function syncShopUser(
       .update({
         email,
         full_name: fullName?.trim() || null,
+        address: address?.trim() || null,
+        phone: phone?.trim() || null,
       })
       .eq("auth_user_id", userId);
     return;
@@ -35,6 +39,8 @@ export async function syncShopUser(
       .update({
         auth_user_id: userId,
         full_name: fullName?.trim() || null,
+        address: address?.trim() || null,
+        phone: phone?.trim() || null,
       })
       .eq("email", email);
     return;
@@ -44,5 +50,7 @@ export async function syncShopUser(
     auth_user_id: userId,
     email,
     full_name: fullName?.trim() || null,
+    address: address?.trim() || null,
+    phone: phone?.trim() || null,
   });
 }

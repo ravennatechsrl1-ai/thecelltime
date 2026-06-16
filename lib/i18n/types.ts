@@ -59,6 +59,9 @@ export interface Translations {
     email: string;
     password: string;
     fullName: string;
+    address: string;
+    phone: string;
+    phonePlaceholder: string;
     noAccount: string;
     haveAccount: string;
     loginDesc: string;
@@ -71,6 +74,10 @@ export interface Translations {
     emailInUse: string;
     passwordTooShort: string;
     passwordHint: string;
+    showPassword: string;
+    hidePassword: string;
+    signupBadge: string;
+    loginBadge: string;
     loginFailed: string;
     signupFailed: string;
     accountTitle: string;

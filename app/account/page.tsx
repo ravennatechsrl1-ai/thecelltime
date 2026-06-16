@@ -51,6 +51,16 @@ export default function AccountPage() {
     user.email?.split("@")[0] ||
     t.nav.account;
 
+  const displayAddress =
+    typeof user.user_metadata?.address === "string"
+      ? user.user_metadata.address.trim()
+      : "";
+
+  const displayPhone =
+    typeof user.user_metadata?.phone === "string"
+      ? user.user_metadata.phone.trim()
+      : "";
+
   return (
     <div className="bg-brand-gray-50 py-10 sm:py-14">
       <div className="container-app mx-auto max-w-2xl">
@@ -76,6 +86,24 @@ export default function AccountPage() {
               </p>
               <p className="mt-1 font-semibold text-brand-navy">{user.email}</p>
             </div>
+            {displayPhone ? (
+              <div>
+                <p className="text-[10px] font-bold uppercase tracking-widest text-brand-gray-400">
+                  {t.auth.phone}
+                </p>
+                <p className="mt-1 font-semibold text-brand-navy">{displayPhone}</p>
+              </div>
+            ) : null}
+            {displayAddress ? (
+              <div>
+                <p className="text-[10px] font-bold uppercase tracking-widest text-brand-gray-400">
+                  {t.auth.address}
+                </p>
+                <p className="mt-1 whitespace-pre-line font-semibold text-brand-navy">
+                  {displayAddress}
+                </p>
+              </div>
+            ) : null}
           </div>
 
           <div className="mt-8 flex flex-col gap-3 sm:flex-row">
