@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { fetchAllProducts } from "@/lib/admin-analytics";
+import { isAccessorySubtype } from "@/lib/accessories-catalog";
+import { isProtectionSubtype } from "@/lib/protection-catalog";
 import { mapProductRow } from "@/lib/map-product";
 import { getSupabaseClient } from "@/utils/supabase";
 import { ProductCategory, ProductCondition } from "@/types";
@@ -84,17 +86,92 @@ export async function POST(request: NextRequest) {
 
     const imageUrl = publicUrlData.publicUrl;
 
+    const insertRow: Record<string, unknown> = {
+      name,
+      brand,
+      category,
+      condition: category === "phones" ? condition : null,
+      price,
+      stock,
+      image_url: imageUrl,
+    };
+
+    if (category === "protection") {
+      const protectionDeviceType = formData
+        .get("protection_device_type")
+        ?.toString();
+      const protectionBrandSlug = formData
+        .get("protection_brand_slug")
+        ?.toString();
+      const protectionModelSlug = formData
+        .get("protection_model_slug")
+        ?.toString();
+      const protectionSeries = formData.get("protection_series")?.toString();
+      const protectionSubtype = formData.get("protection_subtype")?.toString();
+
+      if (
+        !protectionDeviceType ||
+        !protectionBrandSlug ||
+        !protectionModelSlug ||
+        !protectionSubtype ||
+        !isProtectionSubtype(protectionSubtype)
+      ) {
+        return NextResponse.json(
+          { error: "Dati protezione mancanti o non validi." },
+          { status: 400 }
+        );
+      }
+
+      insertRow.protection_device_type = protectionDeviceType;
+      insertRow.protection_brand_slug = protectionBrandSlug;
+      insertRow.protection_model_slug = protectionModelSlug;
+      insertRow.protection_series = protectionSeries ?? null;
+      insertRow.protection_subtype = protectionSubtype;
+    }
+
+    if (category === "accessories") {
+      const accessoryDeviceType = formData
+        .get("accessory_device_type")
+        ?.toString();
+      const accessoryBrandSlug = formData
+        .get("accessory_brand_slug")
+        ?.toString();
+      const accessoryModelSlug = formData
+        .get("accessory_model_slug")
+        ?.toString();
+      const accessorySeries = formData.get("accessory_series")?.toString();
+      const accessorySubtype = formData.get("accessory_subtype")?.toString();
+
+      if (
+        accessoryDeviceType ||
+        accessoryBrandSlug ||
+        accessoryModelSlug ||
+        accessorySubtype
+      ) {
+        if (
+          !accessoryDeviceType ||
+          !accessoryBrandSlug ||
+          !accessoryModelSlug ||
+          !accessorySubtype ||
+          !isAccessorySubtype(accessorySubtype)
+        ) {
+          return NextResponse.json(
+            { error: "Dati accessori mancanti o non validi." },
+            { status: 400 }
+          );
+        }
+
+        insertRow.accessory_device_type = accessoryDeviceType;
+        insertRow.accessory_brand_slug = accessoryBrandSlug;
+        insertRow.accessory_model_slug = accessoryModelSlug;
+        insertRow.accessory_series = accessorySeries ?? null;
+        insertRow.accessory_subtype = accessorySubtype;
+      }
+    }
+
     const { data, error: insertError } = await supabase
       .from("products")
-      .insert({
-        name,
-        brand,
-        category,
-        condition,
-        price,
-        stock,
-        image_url: imageUrl,
-      })
+      .insert(insertRow)
       .select("*")
       .single();
 

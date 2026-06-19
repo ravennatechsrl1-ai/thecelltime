@@ -46,11 +46,6 @@ export async function PATCH(
       );
     }
 
-    let condition: ProductCondition = null;
-    if (conditionRaw === "new" || conditionRaw === "used") {
-      condition = conditionRaw;
-    }
-
     const supabase = getSupabaseClient();
 
     const { data: existing, error: fetchError } = await supabase
@@ -64,6 +59,11 @@ export async function PATCH(
         { error: "Prodotto non trovato." },
         { status: 404 }
       );
+    }
+
+    let condition: ProductCondition = null;
+    if (existing.category === "phones" && conditionRaw) {
+      condition = conditionRaw;
     }
 
     const updates: Record<string, unknown> = {

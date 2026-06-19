@@ -5,6 +5,7 @@ import "./globals.css";
 import AppProviders from "@/components/AppProviders";
 import { LOCALE_STORAGE_KEY, isValidLocale, DEFAULT_LOCALE } from "@/lib/i18n";
 import { Locale } from "@/lib/i18n/types";
+import { getCatalogBrandsCached } from "@/lib/server/catalog";
 
 const inter = Inter({
   subsets: ["latin"],
@@ -35,11 +36,14 @@ export default async function RootLayout({
   children: React.ReactNode;
 }>) {
   const initialLocale = await getInitialLocale();
+  const initialBrands = await getCatalogBrandsCached();
 
   return (
     <html lang={initialLocale} suppressHydrationWarning>
       <body className={`${inter.variable} font-sans flex min-h-screen flex-col`}>
-        <AppProviders initialLocale={initialLocale}>{children}</AppProviders>
+        <AppProviders initialLocale={initialLocale} initialBrands={initialBrands}>
+          {children}
+        </AppProviders>
       </body>
     </html>
   );

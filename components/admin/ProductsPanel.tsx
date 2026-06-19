@@ -37,7 +37,7 @@ function FieldLabel({
 type StockFilter = "all" | "in_stock" | "low" | "out";
 type ConditionFilter = "all" | "new" | "used";
 
-export default function ProductsPanel() {
+export default function ProductsPanel({ phonesOnly = false }: { phonesOnly?: boolean }) {
   const { t, formatPrice } = useLanguage();
   const [activeTab, setActiveTab] = useState<InventoryTab>("phones");
   const [products, setProducts] = useState<Product[]>([]);
@@ -537,38 +537,42 @@ export default function ProductsPanel() {
 
   return (
     <div className="space-y-5">
-      <div className="flex flex-wrap gap-2 border border-brand-gray-200 bg-white p-2">
-        {tabs.map((tab) => (
-          <button
-            key={tab.id}
-            type="button"
-            onClick={() => {
-              setActiveTab(tab.id);
-              setSuccess(null);
-              setError(null);
-              resetCatalogFilters();
-              setCatalogMessage(null);
-              setCatalogError(null);
-            }}
-            className={`min-h-[44px] flex-1 border px-4 py-2 text-xs font-bold uppercase tracking-wide sm:flex-none sm:px-6 ${
-              activeTab === tab.id
-                ? "border-brand-navy bg-brand-navy text-white"
-                : "border-brand-gray-200 text-brand-gray-700 hover:border-brand-gray-400"
-            }`}
-          >
-            {tab.label}
-            <span className="ml-2 opacity-70">
-              ({products.filter((p) => p.category === tab.id).length})
-            </span>
-          </button>
-        ))}
-      </div>
+      {!phonesOnly ? (
+        <div className="flex flex-wrap gap-2 border border-brand-gray-200 bg-white p-2">
+          {tabs.map((tab) => (
+            <button
+              key={tab.id}
+              type="button"
+              onClick={() => {
+                setActiveTab(tab.id);
+                setSuccess(null);
+                setError(null);
+                resetCatalogFilters();
+                setCatalogMessage(null);
+                setCatalogError(null);
+              }}
+              className={`min-h-[44px] flex-1 border px-4 py-2 text-xs font-bold uppercase tracking-wide sm:flex-none sm:px-6 ${
+                activeTab === tab.id
+                  ? "border-brand-navy bg-brand-navy text-white"
+                  : "border-brand-gray-200 text-brand-gray-700 hover:border-brand-gray-400"
+              }`}
+            >
+              {tab.label}
+              <span className="ml-2 opacity-70">
+                ({products.filter((p) => p.category === tab.id).length})
+              </span>
+            </button>
+          ))}
+        </div>
+      ) : null}
 
-      <Panel title={`${t.admin.uploadTitle} — ${uploadTitles[activeTab]}`}>
+      <Panel
+        title={`${t.admin.uploadTitle} — ${phonesOnly ? t.admin.tabMobiles : uploadTitles[activeTab]}`}
+      >
         <form onSubmit={handleSubmit} className="space-y-4">
-          {activeTab === "phones" && renderPhoneForm()}
-          {activeTab === "accessories" && renderAccessoryForm()}
-          {activeTab === "other" && renderOtherForm()}
+          {(phonesOnly || activeTab === "phones") && renderPhoneForm()}
+          {!phonesOnly && activeTab === "accessories" && renderAccessoryForm()}
+          {!phonesOnly && activeTab === "other" && renderOtherForm()}
 
           <div className="grid gap-4 border-t border-brand-gray-100 pt-4 sm:grid-cols-2 lg:grid-cols-3">
             <div>
@@ -619,7 +623,9 @@ export default function ProductsPanel() {
         </form>
       </Panel>
 
-      <Panel title={`${t.admin.catalogInventory} — ${uploadTitles[activeTab]}`}>
+      <Panel
+        title={`${t.admin.catalogInventory} — ${phonesOnly ? t.admin.tabMobiles : uploadTitles[activeTab]}`}
+      >
         {loading ? (
           <p className="text-sm text-brand-gray-500">{t.common.loading}</p>
         ) : categoryProducts.length === 0 ? (

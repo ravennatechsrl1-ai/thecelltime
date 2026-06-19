@@ -1,6 +1,6 @@
-export type ProductCategory = "phones" | "accessories" | "other";
+export type ProductCategory = "phones" | "accessories" | "other" | "protection";
 
-export type ProductCondition = "new" | "used" | null;
+export type ProductCondition = string | null;
 
 export interface Product {
   id: string;
@@ -13,6 +13,16 @@ export interface Product {
   stock: number;
   /** Percentage off the listed price (e.g. 20 = 20% off). Null = no promotion. */
   promotion_percent: number | null;
+  protection_device_type?: string | null;
+  protection_brand_slug?: string | null;
+  protection_model_slug?: string | null;
+  protection_series?: string | null;
+  protection_subtype?: string | null;
+  accessory_device_type?: string | null;
+  accessory_brand_slug?: string | null;
+  accessory_model_slug?: string | null;
+  accessory_series?: string | null;
+  accessory_subtype?: string | null;
 }
 
 export type RepairTicketStatus =
@@ -96,6 +106,16 @@ export interface AdminProductPayload {
   stock: number;
   brand: string;
   imageUrl: string;
+  protection_device_type?: string | null;
+  protection_brand_slug?: string | null;
+  protection_model_slug?: string | null;
+  protection_series?: string | null;
+  protection_subtype?: string | null;
+  accessory_device_type?: string | null;
+  accessory_brand_slug?: string | null;
+  accessory_model_slug?: string | null;
+  accessory_series?: string | null;
+  accessory_subtype?: string | null;
 }
 
 export interface ApiErrorResponse {

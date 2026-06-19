@@ -8,13 +8,16 @@ import { useLanguage } from "@/components/LanguageProvider";
 import LanguageSwitcher from "@/components/LanguageSwitcher";
 import MobileDrawer from "@/components/MobileDrawer";
 import NavDropdown from "@/components/NavDropdown";
+import AccessoriesMegaMenu from "@/components/AccessoriesMegaMenu";
+import ProtectionMegaMenu from "@/components/ProtectionMegaMenu";
 import SiteLogo from "@/components/SiteLogo";
 import { useAuth } from "@/components/AuthProvider";
 import { useHydrated } from "@/hooks/useHydrated";
+import { useCatalogBrands } from "@/hooks/useCatalogBrands";
 import { buildPhoneNavGroups } from "@/lib/nav-phone-brands";
+import { shopAllBrandsPath, shopBrandCatalogPath, PHONE_BRANDS } from "@/lib/phone-brands";
 import {
   IconAccessories,
-  IconAdmin,
   IconBrands,
   IconCart,
   IconEquipment,
@@ -36,9 +39,25 @@ export default function Header() {
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [authOpen, setAuthOpen] = useState(false);
+  const { brands: catalogBrands } = useCatalogBrands();
 
   const navCategories = useMemo(
-    () => [
+    () => {
+      const brandsForNav =
+        catalogBrands.length > 0
+          ? catalogBrands
+          : PHONE_BRANDS.map((brand) => ({
+              slug: brand.slug,
+              label: t.nav[brand.labelKey],
+            }));
+
+      const brandItems = brandsForNav.map((brand) => ({
+        href: shopBrandCatalogPath(brand.slug),
+        label: brand.label,
+      }));
+      brandItems.push({ href: shopAllBrandsPath(), label: t.nav.allBrands });
+
+      return [
       {
         id: "brands",
         label: t.nav.brands,
@@ -47,11 +66,7 @@ export default function Header() {
             <IconBrands className="h-4 w-4" />
           </NavIconWrap>
         ),
-        items: [
-          { href: "/shop/phones/new/apple", label: t.nav.brandApple },
-          { href: "/shop/phones/new/samsung", label: t.nav.brandSamsung },
-          { href: "/shop/phones/new", label: t.nav.allBrands },
-        ],
+        items: brandItems,
       },
       {
         id: "repair",
@@ -75,8 +90,11 @@ export default function Header() {
           </NavIconWrap>
         ),
         items: [
-          { href: "/shop/accessories/cases", label: t.nav.cases },
-          { href: "/shop/accessories/screen-protectors", label: t.nav.screenProtectors },
+          { href: "/shop/protection", label: t.protection.allDevices },
+          { href: "/shop/protection/mobiles", label: t.protection.deviceMobiles },
+          { href: "/shop/protection/tablets", label: t.protection.deviceTablets },
+          { href: "/shop/protection/computers", label: t.protection.deviceComputers },
+          { href: "/shop/protection/watch", label: t.protection.deviceWatch },
         ],
       },
       {
@@ -88,8 +106,11 @@ export default function Header() {
           </NavIconWrap>
         ),
         items: [
-          { href: "/shop/accessories/cables", label: t.nav.cables },
-          { href: "/shop/accessories/chargers", label: t.nav.chargers },
+          { href: "/shop/accessories", label: t.accessoriesCatalog.allDevices },
+          { href: "/shop/accessories/mobiles", label: t.accessoriesCatalog.deviceMobiles },
+          { href: "/shop/accessories/tablets", label: t.accessoriesCatalog.deviceTablets },
+          { href: "/shop/accessories/computers", label: t.accessoriesCatalog.deviceComputers },
+          { href: "/shop/accessories/watch", label: t.accessoriesCatalog.deviceWatch },
         ],
       },
       {
@@ -113,7 +134,7 @@ export default function Header() {
             <IconPhone className="h-4 w-4" />
           </NavIconWrap>
         ),
-        groups: buildPhoneNavGroups(t),
+        groups: buildPhoneNavGroups(t, catalogBrands),
       },
       {
         id: "promotions",
@@ -125,8 +146,9 @@ export default function Header() {
         ),
         items: [{ href: "/shop/promotions", label: t.nav.viewPromotions }],
       },
-    ],
-    [t]
+    ];
+    },
+    [t, catalogBrands]
   );
 
   function handleSearch(e: FormEvent) {
@@ -261,14 +283,6 @@ export default function Header() {
                 )}
               </div>
 
-              <Link
-                href="/admin"
-                className="flex h-10 w-10 items-center justify-center rounded-full bg-white/10 text-white transition-colors hover:bg-white/20"
-                aria-label={t.nav.admin}
-              >
-                <IconAdmin className="h-4 w-4" />
-              </Link>
-
               <button
                 type="button"
                 onClick={openCart}
@@ -318,16 +332,32 @@ export default function Header() {
           aria-label={t.nav.mainNav}
         >
           <div className="container-app flex items-center justify-center gap-1 py-1">
-            {navCategories.map((cat) => (
-              <NavDropdown
-                key={cat.id}
-                label={cat.label}
-                icon={cat.icon}
-                items={"items" in cat ? cat.items : undefined}
-                groups={"groups" in cat ? cat.groups : undefined}
-                inverted
-              />
-            ))}
+            {navCategories.map((cat) =>
+              cat.id === "protection" ? (
+                <ProtectionMegaMenu
+                  key={cat.id}
+                  label={cat.label}
+                  icon={cat.icon}
+                  inverted
+                />
+              ) : cat.id === "accessories" ? (
+                <AccessoriesMegaMenu
+                  key={cat.id}
+                  label={cat.label}
+                  icon={cat.icon}
+                  inverted
+                />
+              ) : (
+                <NavDropdown
+                  key={cat.id}
+                  label={cat.label}
+                  icon={cat.icon}
+                  items={"items" in cat ? cat.items : undefined}
+                  groups={"groups" in cat ? cat.groups : undefined}
+                  inverted
+                />
+              )
+            )}
           </div>
         </nav>
       </header>

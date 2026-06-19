@@ -11,10 +11,10 @@ import {
   IconRepair,
 } from "@/components/admin/AdminStatIcons";
 import AdminShell, { AdminView } from "@/components/admin/AdminShell";
+import CatalogProductsPanel from "@/components/admin/CatalogProductsPanel";
 import CustomersPanel from "@/components/admin/CustomersPanel";
 import DashboardOverview from "@/components/admin/DashboardOverview";
 import OrdersPanel from "@/components/admin/OrdersPanel";
-import ProductsPanel from "@/components/admin/ProductsPanel";
 import PromotionsPanel from "@/components/admin/PromotionsPanel";
 import RepairsPanel from "@/components/admin/RepairsPanel";
 import { useLanguage } from "@/components/LanguageProvider";
@@ -211,7 +211,7 @@ export default function AdminPage() {
           onRefresh={loadStats}
         />
       )}
-      {activeView === "products" && <ProductsPanel />}
+      {activeView === "products" && <CatalogProductsPanel />}
       {activeView === "promotions" && <PromotionsPanel />}
       {activeView === "orders" && <OrdersPanel />}
       {activeView === "customers" && <CustomersPanel />}

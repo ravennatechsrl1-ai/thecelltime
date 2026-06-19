@@ -12,10 +12,15 @@ import {
   accessoryTypeToSlug,
   productMatchesAccessoryType,
 } from "@/lib/admin-catalog";
-import { PHONE_BRANDS, productMatchesBrand } from "@/lib/phone-brands";
+import { useCatalogBrands } from "@/hooks/useCatalogBrands";
+import { useProducts } from "@/components/ProductsProvider";
+import { PHONE_BRANDS, productMatchesBrand, productMatchesShopBrand, shopAllBrandsPath, shopBrandCatalogPath } from "@/lib/phone-brands";
 import {
   getShopBrand,
   isAccessoryShopView,
+  isBrandShopView,
+  isBrandsAllShopView,
+  isBrandsCatalogView,
   isPhoneShopView,
   isPromotionShopView,
   parseShopSegments,
@@ -29,7 +34,11 @@ type SortOption = "featured" | "price-asc" | "price-desc";
 
 const PER_PAGE = 50;
 
-function filterByView(products: Product[], view: ShopView): Product[] {
+function filterByView(
+  products: Product[],
+  view: ShopView,
+  brandLabels: Map<string, string>
+): Product[] {
   switch (view.type) {
     case "promotions":
       return products.filter((product) => isOnPromotion(product));
@@ -58,6 +67,21 @@ function filterByView(products: Product[], view: ShopView): Product[] {
           product.category === "phones" &&
           product.condition === "used" &&
           productMatchesBrand(product.brand, view.brand)
+      );
+    case "brand":
+      return products.filter((product) =>
+        productMatchesShopBrand(
+          product,
+          view.brand,
+          brandLabels.get(view.brand)
+        )
+      );
+    case "brands-all":
+      return products.filter(
+        (product) =>
+          product.category === "phones" ||
+          product.category === "accessories" ||
+          product.category === "protection"
       );
     case "accessories":
       return products.filter((product) => product.category === "accessories");
@@ -89,10 +113,13 @@ function sortProducts(products: Product[], sort: SortOption): Product[] {
 
 function getPageTitle(
   view: ShopView,
-  t: ReturnType<typeof useLanguage>["t"]
+  t: ReturnType<typeof useLanguage>["t"],
+  brandLabels: Map<string, string>
 ): string {
   const brand = getShopBrand(view);
   if (brand) {
+    const catalogLabel = brandLabels.get(brand);
+    if (catalogLabel) return catalogLabel;
     const config = PHONE_BRANDS.find((item) => item.slug === brand);
     if (config) return t.nav[config.labelKey];
   }
@@ -111,6 +138,8 @@ function getPageTitle(
       return t.shop.filterAccessories;
     case "accessories-type":
       return getAccessoryTypeLabel(view.accessoryType, t);
+    case "brands-all":
+      return t.nav.allBrands;
     default:
       return t.shop.title;
   }
@@ -131,14 +160,35 @@ function getAccessoryTypeLabel(
   return labels[type];
 }
 
-function ShopCatalogContent({ initialView }: { initialView: ShopView }) {
+function ShopCatalogContent({
+  initialView,
+  initialProducts,
+}: {
+  initialView: ShopView;
+  initialProducts?: Product[];
+}) {
   const pathname = usePathname();
   const router = useRouter();
   const searchParams = useSearchParams();
   const { t } = useLanguage();
+  const { brands: catalogBrands } = useCatalogBrands();
+  const brandLabels = useMemo(
+    () => new Map(catalogBrands.map((brand) => [brand.slug, brand.label])),
+    [catalogBrands]
+  );
+  const sidebarBrands =
+    catalogBrands.length > 0
+      ? catalogBrands
+      : PHONE_BRANDS.map((brand) => ({
+          id: brand.slug,
+          slug: brand.slug,
+          label: t.nav[brand.labelKey],
+          sort_order: 0,
+        }));
   const [sort, setSort] = useState<SortOption>("featured");
   const [page, setPage] = useState(1);
-  const [products, setProducts] = useState<Product[]>([]);
+  const { products: sharedProducts, ensureLoaded } = useProducts();
+  const [products, setProducts] = useState<Product[]>(initialProducts ?? []);
 
   const segments = pathname
     .replace(/^\/shop\/?/, "")
@@ -146,6 +196,9 @@ function ShopCatalogContent({ initialView }: { initialView: ShopView }) {
     .filter(Boolean);
   const view = parseShopSegments(segments) ?? initialView;
   const phoneContext = isPhoneShopView(view);
+  const brandContext = isBrandShopView(view);
+  const brandsAllContext = isBrandsAllShopView(view);
+  const brandsCatalogContext = isBrandsCatalogView(view);
   const accessoryContext = isAccessoryShopView(view);
   const promotionContext = isPromotionShopView(view);
   const activeBrand = getShopBrand(view);
@@ -168,31 +221,30 @@ function ShopCatalogContent({ initialView }: { initialView: ShopView }) {
   }, [searchParams, router]);
 
   useEffect(() => {
-    async function fetchProducts() {
-      try {
-        const response = await fetch("/api/products");
-        if (response.ok) {
-          const data: { products: Product[] } = await response.json();
-          setProducts(data.products ?? []);
-        }
-      } catch {
-        // keep empty catalog on failure
-      }
+    if (initialProducts) {
+      setProducts(initialProducts);
+      return;
     }
-    fetchProducts();
-  }, []);
+    ensureLoaded();
+  }, [initialProducts, ensureLoaded]);
+
+  useEffect(() => {
+    if (!initialProducts && sharedProducts.length > 0) {
+      setProducts(sharedProducts);
+    }
+  }, [initialProducts, sharedProducts]);
 
   const searchQuery = searchParams.get("search")?.trim().toLowerCase() ?? "";
 
   const filteredProducts = useMemo(() => {
-    let filtered = filterByView(products, view);
+    let filtered = filterByView(products, view, brandLabels);
     if (searchQuery) {
       filtered = filtered.filter((product) =>
         `${product.name} ${product.brand}`.toLowerCase().includes(searchQuery)
       );
     }
     return sortProducts(filtered, sort);
-  }, [products, view, searchQuery, sort]);
+  }, [products, view, searchQuery, sort, brandLabels]);
 
   const totalPages = Math.max(1, Math.ceil(filteredProducts.length / PER_PAGE));
   const safePage = Math.min(page, totalPages);
@@ -200,11 +252,10 @@ function ShopCatalogContent({ initialView }: { initialView: ShopView }) {
   const pageEnd = Math.min(pageStart + PER_PAGE, filteredProducts.length);
   const pageProducts = filteredProducts.slice(pageStart, pageEnd);
 
-  const pageTitle = getPageTitle(view, t);
-  const brandConfig = activeBrand
-    ? PHONE_BRANDS.find((brand) => brand.slug === activeBrand)
-    : null;
-  const toolbarLabel = brandConfig ? t.nav[brandConfig.labelKey] : pageTitle;
+  const pageTitle = getPageTitle(view, t, brandLabels);
+  const toolbarLabel = activeBrand
+    ? brandLabels.get(activeBrand) ?? pageTitle
+    : pageTitle;
 
   const topCategories = [
     { href: "/shop", label: t.shop.filterAll, match: ["all"] as const },
@@ -274,11 +325,13 @@ function ShopCatalogContent({ initialView }: { initialView: ShopView }) {
 
   const visibleCategories = phoneContext
     ? phoneCategories
-    : accessoryContext
-      ? accessoryCategories
-      : promotionContext
-        ? topCategories.filter((item) => item.href === "/shop/promotions")
-        : topCategories;
+    : brandsCatalogContext
+      ? []
+      : accessoryContext
+        ? accessoryCategories
+        : promotionContext
+          ? topCategories.filter((item) => item.href === "/shop/promotions")
+          : topCategories;
 
   return (
     <div className="container-app py-4 sm:py-6">
@@ -312,7 +365,7 @@ function ShopCatalogContent({ initialView }: { initialView: ShopView }) {
               </li>
             </>
           )}
-          {activeBrand && (
+          {activeBrand && phoneContext && (
             <>
               <li aria-hidden="true">/</li>
               <li className="font-semibold uppercase tracking-wide text-brand-black">
@@ -320,7 +373,32 @@ function ShopCatalogContent({ initialView }: { initialView: ShopView }) {
               </li>
             </>
           )}
-          {!phoneContext && !accessoryContext && view.type !== "all" && (
+          {brandContext && (
+            <>
+              <li aria-hidden="true">/</li>
+              <li>
+                <Link
+                  href={shopAllBrandsPath()}
+                  className="hover:text-brand-black hover:underline"
+                >
+                  {t.nav.brands}
+                </Link>
+              </li>
+              <li aria-hidden="true">/</li>
+              <li className="font-semibold uppercase tracking-wide text-brand-black">
+                {pageTitle}
+              </li>
+            </>
+          )}
+          {brandsAllContext && (
+            <>
+              <li aria-hidden="true">/</li>
+              <li className="font-semibold uppercase tracking-wide text-brand-black">
+                {t.nav.allBrands}
+              </li>
+            </>
+          )}
+          {!phoneContext && !brandContext && !brandsAllContext && !accessoryContext && view.type !== "all" && (
             <>
               <li aria-hidden="true">/</li>
               <li className="font-semibold uppercase tracking-wide text-brand-black">
@@ -328,7 +406,7 @@ function ShopCatalogContent({ initialView }: { initialView: ShopView }) {
               </li>
             </>
           )}
-          {!phoneContext && !accessoryContext && view.type === "all" && (
+          {!phoneContext && !brandContext && !brandsAllContext && !accessoryContext && view.type === "all" && (
             <>
               <li aria-hidden="true">/</li>
               <li className="font-semibold uppercase tracking-wide text-brand-black">
@@ -348,6 +426,7 @@ function ShopCatalogContent({ initialView }: { initialView: ShopView }) {
 
       <div className="lg:flex lg:items-start lg:gap-5">
         <div className="mb-4 lg:hidden">
+          {visibleCategories.length > 0 && (
           <div className="scrollbar-hide -mx-4 flex gap-2 overflow-x-auto bg-white px-4 py-3">
             {visibleCategories.map((item) => (
               <Link
@@ -366,9 +445,12 @@ function ShopCatalogContent({ initialView }: { initialView: ShopView }) {
               </Link>
             ))}
           </div>
+          )}
         </div>
 
         <aside className="mobilax-sidebar hidden w-56 shrink-0 lg:block">
+          {visibleCategories.length > 0 && (
+          <>
           <div className="border-b border-brand-gray-200 px-4 py-3">
             <p className="text-xs font-bold uppercase tracking-widest text-brand-gray-500">
               {t.shop.categories}
@@ -393,18 +475,33 @@ function ShopCatalogContent({ initialView }: { initialView: ShopView }) {
               </li>
             ))}
           </ul>
+          </>
+          )}
 
-          {phoneContext && (
+          {brandsCatalogContext && (
             <>
-              <div className="border-b border-t border-brand-gray-200 px-4 py-3">
+              <div className="border-b border-brand-gray-200 px-4 py-3">
                 <p className="text-xs font-bold uppercase tracking-widest text-brand-gray-500">
                   {t.shop.brandsSidebar}
                 </p>
               </div>
               <ul className="max-h-[320px] overflow-y-auto">
-                {PHONE_BRANDS.map((brand) => {
-                  const href = shopBrandPath(phoneCondition, brand.slug);
+                <li>
+                  <Link
+                    href={shopAllBrandsPath()}
+                    className={`mobilax-sidebar-link ${
+                      brandsAllContext
+                        ? "bg-brand-gray-100 font-bold text-brand-black"
+                        : "text-brand-gray-700 hover:bg-brand-gray-50"
+                    }`}
+                  >
+                    {t.nav.allBrands}
+                  </Link>
+                </li>
+                {sidebarBrands.map((brand) => {
+                  const href = shopBrandCatalogPath(brand.slug);
                   const isActive = activeBrand === brand.slug;
+                  const label = brand.label;
                   return (
                     <li key={brand.slug}>
                       <Link
@@ -415,7 +512,38 @@ function ShopCatalogContent({ initialView }: { initialView: ShopView }) {
                             : "text-brand-gray-700 hover:bg-brand-gray-50"
                         }`}
                       >
-                        {t.nav[brand.labelKey]}
+                        {label}
+                      </Link>
+                    </li>
+                  );
+                })}
+              </ul>
+            </>
+          )}
+
+          {phoneContext && (
+            <>
+              <div className="border-b border-t border-brand-gray-200 px-4 py-3">
+                <p className="text-xs font-bold uppercase tracking-widest text-brand-gray-500">
+                  {t.shop.brandsSidebar}
+                </p>
+              </div>
+              <ul className="max-h-[320px] overflow-y-auto">
+                {sidebarBrands.map((brand) => {
+                  const href = shopBrandPath(phoneCondition, brand.slug);
+                  const isActive = activeBrand === brand.slug;
+                  const label = brand.label;
+                  return (
+                    <li key={brand.slug}>
+                      <Link
+                        href={href}
+                        className={`mobilax-sidebar-link ${
+                          isActive
+                            ? "bg-brand-gray-100 font-bold text-brand-black"
+                            : "text-brand-gray-700 hover:bg-brand-gray-50"
+                        }`}
+                      >
+                        {label}
                       </Link>
                     </li>
                   );
@@ -495,7 +623,13 @@ function ShopCatalogContent({ initialView }: { initialView: ShopView }) {
   );
 }
 
-export default function ShopCatalog({ view }: { view: ShopView }) {
+export default function ShopCatalog({
+  view,
+  initialProducts,
+}: {
+  view: ShopView;
+  initialProducts?: Product[];
+}) {
   const { t } = useLanguage();
 
   return (
@@ -506,7 +640,7 @@ export default function ShopCatalog({ view }: { view: ShopView }) {
         </div>
       }
     >
-      <ShopCatalogContent initialView={view} />
+      <ShopCatalogContent initialView={view} initialProducts={initialProducts} />
     </Suspense>
   );
 }

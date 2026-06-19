@@ -64,10 +64,23 @@ export const REPAIR_ISSUES = [
 
 export function getSiteUrl(): string {
   if (process.env.NEXT_PUBLIC_SITE_URL) {
-    return process.env.NEXT_PUBLIC_SITE_URL;
+    return process.env.NEXT_PUBLIC_SITE_URL.replace(/\/$/, "");
   }
   if (process.env.VERCEL_URL) {
     return `https://${process.env.VERCEL_URL}`;
   }
   return "http://localhost:3000";
+}
+
+/** Public site base URL for auth emails (client + server). */
+export function getPublicSiteUrl(fallbackOrigin?: string): string {
+  const fromEnv = process.env.NEXT_PUBLIC_SITE_URL?.replace(/\/$/, "");
+  if (fromEnv) return fromEnv;
+  if (fallbackOrigin) return fallbackOrigin.replace(/\/$/, "");
+  return getSiteUrl();
+}
+
+export function getAuthCallbackUrl(next = "/", fallbackOrigin?: string): string {
+  const base = getPublicSiteUrl(fallbackOrigin);
+  return `${base}/auth/callback?next=${encodeURIComponent(next)}`;
 }

@@ -9,7 +9,10 @@ import { LanguageProvider, useLanguage } from "@/components/LanguageProvider";
 import CartDrawer from "@/components/CartDrawer";
 import Footer from "@/components/Footer";
 import Header from "@/components/Header";
+import { CatalogBrandsProvider } from "@/components/CatalogBrandsProvider";
+import { ProductsProvider } from "@/components/ProductsProvider";
 import { Locale } from "@/lib/i18n/types";
+import { CatalogBrand } from "@/lib/catalog-brands-sync";
 
 function SectionFallback({ message }: { message: string }) {
   return (
@@ -56,15 +59,21 @@ function AppChrome({ children }: { children: ReactNode }) {
 export default function AppProviders({
   children,
   initialLocale,
+  initialBrands = [],
 }: {
   children: ReactNode;
   initialLocale?: Locale;
+  initialBrands?: CatalogBrand[];
 }) {
   return (
     <LanguageProvider initialLocale={initialLocale}>
       <AuthProvider>
         <CartProvider>
-          <AppChrome>{children}</AppChrome>
+          <CatalogBrandsProvider initialBrands={initialBrands}>
+            <ProductsProvider>
+              <AppChrome>{children}</AppChrome>
+            </ProductsProvider>
+          </CatalogBrandsProvider>
         </CartProvider>
       </AuthProvider>
     </LanguageProvider>

@@ -12,8 +12,12 @@ import {
   NavIconWrap,
 } from "@/components/icons/NavIcons";
 
+import { useCatalogBrands } from "@/hooks/useCatalogBrands";
+import { PHONE_BRANDS, shopAllBrandsPath, shopBrandCatalogPath } from "@/lib/phone-brands";
+
 export default function HomeCategoryNav() {
   const { t } = useLanguage();
+  const { brands: catalogBrands } = useCatalogBrands();
 
   const categories = useMemo(
     () => [
@@ -49,14 +53,21 @@ export default function HomeCategoryNav() {
     [t]
   );
 
-  const brands = useMemo(
-    () => [
-      { href: "/shop/phones/new/apple", label: t.nav.brandApple },
-      { href: "/shop/phones/new/samsung", label: t.nav.brandSamsung },
-      { href: "/shop/phones/new", label: t.nav.allBrands },
-    ],
-    [t]
-  );
+  const brands = useMemo(() => {
+    const items =
+      catalogBrands.length > 0
+        ? catalogBrands.map((brand) => ({
+            href: shopBrandCatalogPath(brand.slug),
+            label: brand.label,
+          }))
+        : PHONE_BRANDS.map((brand) => ({
+            href: shopBrandCatalogPath(brand.slug),
+            label: t.nav[brand.labelKey],
+          }));
+
+    items.push({ href: shopAllBrandsPath(), label: t.nav.allBrands });
+    return items;
+  }, [catalogBrands, t]);
 
   return (
     <section className="border-y border-brand-gray-200 bg-brand-gray-50 py-10 sm:py-12">

@@ -1,5 +1,21 @@
 import { AccessoryType, accessorySlugToType, accessoryTypeToSlug } from "@/lib/admin-catalog";
-import { isPhoneBrandSlug, PhoneBrandSlug } from "@/lib/phone-brands";
+import {
+  accessorySlugToSubtype,
+  AccessoryDeviceType,
+  AccessorySubtype,
+  isAccessoryBrandSlug,
+  isAccessoryDeviceType,
+  isAccessoryModelSlug,
+} from "@/lib/accessories-catalog";
+import {
+  isProtectionBrandSlug,
+  isProtectionDeviceType,
+  isProtectionModelSlug,
+  ProtectionDeviceType,
+  protectionSlugToSubtype,
+  ProtectionSubtype,
+} from "@/lib/protection-catalog";
+import { isBrandSlug, BrandSlug } from "@/lib/phone-brands";
 import { ShopFilter } from "@/types";
 
 export type ShopView =
@@ -8,10 +24,29 @@ export type ShopView =
   | { type: "phones" }
   | { type: "phones-new" }
   | { type: "phones-used" }
-  | { type: "phones-new-brand"; brand: PhoneBrandSlug }
-  | { type: "phones-used-brand"; brand: PhoneBrandSlug }
+  | { type: "phones-new-brand"; brand: BrandSlug }
+  | { type: "phones-used-brand"; brand: BrandSlug }
+  | { type: "brands-all" }
+  | { type: "brand"; brand: BrandSlug }
   | { type: "accessories" }
-  | { type: "accessories-type"; accessoryType: AccessoryType };
+  | { type: "accessories-type"; accessoryType: AccessoryType }
+  | { type: "accessories-device"; deviceType: AccessoryDeviceType }
+  | { type: "accessories-brand"; deviceType: AccessoryDeviceType; brandSlug: string }
+  | {
+      type: "accessories-model";
+      deviceType: AccessoryDeviceType;
+      brandSlug: string;
+      modelSlug: string;
+    }
+  | { type: "protection" }
+  | { type: "protection-device"; deviceType: ProtectionDeviceType }
+  | { type: "protection-brand"; deviceType: ProtectionDeviceType; brandSlug: string }
+  | {
+      type: "protection-model";
+      deviceType: ProtectionDeviceType;
+      brandSlug: string;
+      modelSlug: string;
+    };
 
 export function parseShopSegments(segments?: string[]): ShopView | null {
   if (!segments || segments.length === 0) {
@@ -30,10 +65,54 @@ export function parseShopSegments(segments?: string[]): ShopView | null {
     return { type: "accessories" };
   }
 
-  if (segments[0] === "accessories" && segments.length === 2) {
-    const accessoryType = accessorySlugToType(segments[1]);
-    if (accessoryType) {
-      return { type: "accessories-type", accessoryType };
+  if (segments[0] === "brands") {
+    if (segments.length === 1) {
+      return { type: "brands-all" };
+    }
+    if (segments.length === 2) {
+      const brand = segments[1];
+      if (!isBrandSlug(brand)) return null;
+      return { type: "brand", brand };
+    }
+    return null;
+  }
+
+  if (segments[0] === "accessories" && segments.length >= 2) {
+    if (isAccessoryDeviceType(segments[1])) {
+      const deviceType = segments[1];
+      if (segments.length === 2) {
+        return { type: "accessories-device", deviceType };
+      }
+      if (
+        segments.length === 3 &&
+        isAccessoryBrandSlug(deviceType, segments[2])
+      ) {
+        return {
+          type: "accessories-brand",
+          deviceType,
+          brandSlug: segments[2],
+        };
+      }
+      if (
+        segments.length === 4 &&
+        isAccessoryBrandSlug(deviceType, segments[2]) &&
+        isAccessoryModelSlug(deviceType, segments[2], segments[3])
+      ) {
+        return {
+          type: "accessories-model",
+          deviceType,
+          brandSlug: segments[2],
+          modelSlug: segments[3],
+        };
+      }
+      return null;
+    }
+
+    if (segments.length === 2) {
+      const accessoryType = accessorySlugToType(segments[1]);
+      if (accessoryType) {
+        return { type: "accessories-type", accessoryType };
+      }
     }
   }
 
@@ -45,9 +124,41 @@ export function parseShopSegments(segments?: string[]): ShopView | null {
   if (segments[0] === "phones" && segments.length === 3) {
     const condition = segments[1];
     const brand = segments[2];
-    if (!isPhoneBrandSlug(brand)) return null;
+    if (!isBrandSlug(brand)) return null;
     if (condition === "new") return { type: "phones-new-brand", brand };
     if (condition === "used") return { type: "phones-used-brand", brand };
+  }
+
+  if (segments[0] === "protection") {
+    if (segments.length === 1) return { type: "protection" };
+    if (segments.length === 2 && isProtectionDeviceType(segments[1])) {
+      return { type: "protection-device", deviceType: segments[1] };
+    }
+    if (
+      segments.length === 3 &&
+      isProtectionDeviceType(segments[1]) &&
+      isProtectionBrandSlug(segments[1], segments[2])
+    ) {
+      return {
+        type: "protection-brand",
+        deviceType: segments[1],
+        brandSlug: segments[2],
+      };
+    }
+    if (
+      segments.length === 4 &&
+      isProtectionDeviceType(segments[1]) &&
+      isProtectionBrandSlug(segments[1], segments[2]) &&
+      isProtectionModelSlug(segments[1], segments[2], segments[3])
+    ) {
+      return {
+        type: "protection-model",
+        deviceType: segments[1],
+        brandSlug: segments[2],
+        modelSlug: segments[3],
+      };
+    }
+    return null;
   }
 
   return null;
@@ -69,10 +180,28 @@ export function shopViewToPath(view: ShopView): string {
       return `/shop/phones/new/${view.brand}`;
     case "phones-used-brand":
       return `/shop/phones/used/${view.brand}`;
+    case "brands-all":
+      return "/shop/brands";
+    case "brand":
+      return `/shop/brands/${view.brand}`;
     case "accessories":
       return "/shop/accessories";
     case "accessories-type":
       return `/shop/accessories/${accessoryTypeToSlug(view.accessoryType)}`;
+    case "accessories-device":
+      return `/shop/accessories/${view.deviceType}`;
+    case "accessories-brand":
+      return `/shop/accessories/${view.deviceType}/${view.brandSlug}`;
+    case "accessories-model":
+      return `/shop/accessories/${view.deviceType}/${view.brandSlug}/${view.modelSlug}`;
+    case "protection":
+      return "/shop/protection";
+    case "protection-device":
+      return `/shop/protection/${view.deviceType}`;
+    case "protection-brand":
+      return `/shop/protection/${view.deviceType}/${view.brandSlug}`;
+    case "protection-model":
+      return `/shop/protection/${view.deviceType}/${view.brandSlug}/${view.modelSlug}`;
   }
 }
 
@@ -94,8 +223,66 @@ export function shopViewToFilter(view: ShopView): ShopFilter {
   }
 }
 
+export type ProtectionShopView = Extract<
+  ShopView,
+  | { type: "protection" }
+  | { type: "protection-device" }
+  | { type: "protection-brand" }
+  | { type: "protection-model" }
+>;
+
+export function isProtectionShopView(view: ShopView): view is ProtectionShopView {
+  return (
+    view.type === "protection" ||
+    view.type === "protection-device" ||
+    view.type === "protection-brand" ||
+    view.type === "protection-model"
+  );
+}
+
+export type AccessoriesHierarchyView = Extract<
+  ShopView,
+  | { type: "accessories" }
+  | { type: "accessories-device" }
+  | { type: "accessories-brand" }
+  | { type: "accessories-model" }
+>;
+
+export function isAccessoriesHierarchyView(
+  view: ShopView
+): view is AccessoriesHierarchyView {
+  return (
+    view.type === "accessories" ||
+    view.type === "accessories-device" ||
+    view.type === "accessories-brand" ||
+    view.type === "accessories-model"
+  );
+}
+
+export function getAccessorySubtypeFromSearch(
+  searchParams: URLSearchParams
+): AccessorySubtype | null {
+  const raw = searchParams.get("subtype");
+  if (!raw) return null;
+  return accessorySlugToSubtype(raw);
+}
+
+export function getProtectionSubtypeFromSearch(
+  searchParams: URLSearchParams
+): ProtectionSubtype | null {
+  const raw = searchParams.get("subtype");
+  if (!raw) return null;
+  return protectionSlugToSubtype(raw);
+}
+
 export function isAccessoryShopView(view: ShopView): boolean {
-  return view.type === "accessories" || view.type === "accessories-type";
+  return (
+    view.type === "accessories" ||
+    view.type === "accessories-type" ||
+    view.type === "accessories-device" ||
+    view.type === "accessories-brand" ||
+    view.type === "accessories-model"
+  );
 }
 
 export function isPromotionShopView(view: ShopView): boolean {
@@ -112,16 +299,32 @@ export function isPhoneShopView(view: ShopView): boolean {
   );
 }
 
-export function getShopBrand(view: ShopView): PhoneBrandSlug | null {
-  if (view.type === "phones-new-brand" || view.type === "phones-used-brand") {
+export function getShopBrand(view: ShopView): BrandSlug | null {
+  if (
+    view.type === "phones-new-brand" ||
+    view.type === "phones-used-brand" ||
+    view.type === "brand"
+  ) {
     return view.brand;
   }
   return null;
 }
 
+export function isBrandShopView(view: ShopView): boolean {
+  return view.type === "brand";
+}
+
+export function isBrandsAllShopView(view: ShopView): boolean {
+  return view.type === "brands-all";
+}
+
+export function isBrandsCatalogView(view: ShopView): boolean {
+  return view.type === "brand" || view.type === "brands-all";
+}
+
 export function shopBrandPath(
   condition: "new" | "used",
-  brand: PhoneBrandSlug
+  brand: BrandSlug
 ): string {
   return `/shop/phones/${condition}/${brand}`;
 }
@@ -137,10 +340,13 @@ export function legacyShopQueryToPath(
   if (!filter && !brand) return null;
 
   if (filter === "accessories") return "/shop/accessories";
-  if (filter === "phones-new" && brand && isPhoneBrandSlug(brand)) {
+  if (brand && isBrandSlug(brand)) {
+    return `/shop/brands/${brand}`;
+  }
+  if (filter === "phones-new" && brand && isBrandSlug(brand)) {
     return shopBrandPath("new", brand);
   }
-  if (filter === "phones-used" && brand && isPhoneBrandSlug(brand)) {
+  if (filter === "phones-used" && brand && isBrandSlug(brand)) {
     return shopBrandPath("used", brand);
   }
   if (filter === "phones-new") return "/shop/phones/new";

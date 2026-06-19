@@ -50,13 +50,13 @@ function MobilaxCatalogPanel({
 }
 
 interface HomeMobilaxDualCatalogProps {
-  newArrivals: Product[];
-  inStock: Product[];
+  phones: Product[];
+  accessoriesAndProtection: Product[];
 }
 
 export default function HomeMobilaxDualCatalog({
-  newArrivals,
-  inStock,
+  phones,
+  accessoriesAndProtection,
 }: HomeMobilaxDualCatalogProps) {
   const { t } = useLanguage();
 
@@ -65,14 +65,14 @@ export default function HomeMobilaxDualCatalog({
       <div className="container-app">
         <div className="grid gap-6 lg:grid-cols-2 lg:gap-8">
           <MobilaxCatalogPanel
-            title={t.home.newArrivals}
-            products={newArrivals}
+            title={t.home.phonesSection}
+            products={phones}
             seeMoreHref="/shop/phones/new"
           />
           <MobilaxCatalogPanel
-            title={t.home.backInStock}
-            products={inStock}
-            seeMoreHref="/shop"
+            title={t.home.accessoriesSection}
+            products={accessoriesAndProtection}
+            seeMoreHref="/shop/accessories"
           />
         </div>
       </div>

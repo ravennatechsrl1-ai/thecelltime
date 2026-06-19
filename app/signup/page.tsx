@@ -7,6 +7,7 @@ import { useAuth } from "@/components/AuthProvider";
 import { useLanguage } from "@/components/LanguageProvider";
 import PasswordInput from "@/components/PasswordInput";
 import SiteLogo from "@/components/SiteLogo";
+import { getAuthCallbackUrl } from "@/lib/constants";
 import { createClient } from "@/utils/supabase/browser";
 
 function mapAuthError(message: string, t: ReturnType<typeof useLanguage>["t"]) {
@@ -25,7 +26,6 @@ export default function SignupPage() {
   const { t } = useLanguage();
   const { refreshUser } = useAuth();
   const [fullName, setFullName] = useState("");
-  const [address, setAddress] = useState("");
   const [phone, setPhone] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -47,10 +47,9 @@ export default function SignupPage() {
         options: {
           data: {
             full_name: fullName.trim(),
-            address: address.trim(),
             phone: phone.trim(),
           },
-          emailRedirectTo: `${window.location.origin}/auth/callback?next=/account`,
+          emailRedirectTo: getAuthCallbackUrl("/", window.location.origin),
         },
       });
 
@@ -58,11 +57,39 @@ export default function SignupPage() {
         throw new Error(mapAuthError(signUpError.message, t));
       }
 
-      if (data.session) {
+      if (data.user?.identities?.length === 0) {
+        throw new Error(t.auth.emailInUse);
+      }
+
+      async function finishSignIn() {
         await fetch("/api/auth/sync-user", { method: "POST" });
         await refreshUser();
-        router.push("/account");
+        router.push("/");
         router.refresh();
+      }
+
+      if (data.session) {
+        await finishSignIn();
+        return;
+      }
+
+      // Confirm email off: Supabase usually returns a session, but sign in if it did not.
+      const { data: signInData, error: signInError } =
+        await supabase.auth.signInWithPassword({
+          email: email.trim(),
+          password,
+        });
+
+      if (signInError) {
+        if (signInError.message.toLowerCase().includes("email not confirmed")) {
+          setCheckEmail(true);
+          return;
+        }
+        throw new Error(mapAuthError(signInError.message, t));
+      }
+
+      if (signInData.session) {
+        await finishSignIn();
         return;
       }
 
@@ -143,24 +170,6 @@ export default function SignupPage() {
                     required
                     autoComplete="name"
                     className={fieldClass}
-                  />
-                </div>
-
-                <div>
-                  <label
-                    htmlFor="signup-address"
-                    className="mb-2 block text-xs font-bold uppercase tracking-wide text-brand-gray-500"
-                  >
-                    {t.auth.address}
-                  </label>
-                  <textarea
-                    id="signup-address"
-                    value={address}
-                    onChange={(e) => setAddress(e.target.value)}
-                    required
-                    rows={3}
-                    autoComplete="street-address"
-                    className={`${fieldClass} min-h-[88px] resize-y py-3`}
                   />
                 </div>
 

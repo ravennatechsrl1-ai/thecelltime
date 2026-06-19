@@ -1,14 +1,20 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
+import RepairTypesPanel from "@/components/admin/RepairTypesPanel";
 import { Panel } from "@/components/admin/AdminShell";
 import { useLanguage } from "@/components/LanguageProvider";
 import { REPAIR_STATUSES } from "@/lib/constants";
+import {
+  repairTypeLabel,
+  RepairTypeOption,
+} from "@/lib/repair-catalog-service";
 import { RepairTicket, RepairTicketStatus } from "@/types";
 
 export default function RepairsPanel() {
   const { t, formatPrice, tStatus, tIssue } = useLanguage();
   const [tickets, setTickets] = useState<RepairTicket[]>([]);
+  const [repairTypes, setRepairTypes] = useState<RepairTypeOption[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [updatingId, setUpdatingId] = useState<string | null>(null);
@@ -35,7 +41,17 @@ export default function RepairsPanel() {
 
   useEffect(() => {
     fetchTickets();
+    void fetch("/api/admin/catalog/repairs")
+      .then((r) => r.json())
+      .then((data: { types?: RepairTypeOption[] }) =>
+        setRepairTypes(data.types ?? [])
+      )
+      .catch(() => setRepairTypes([]));
   }, [fetchTickets]);
+
+  function issueLabel(issue: string) {
+    return repairTypeLabel(issue, repairTypes, tIssue(issue));
+  }
 
   async function handleStatusChange(
     ticketId: string,
@@ -66,84 +82,102 @@ export default function RepairsPanel() {
   }
 
   return (
-    <Panel title={t.admin.tickets}>
-      {error && (
-        <p className="mb-4 text-sm text-red-600" role="alert">
-          {error}
-        </p>
-      )}
-      {loading ? (
-        <p className="text-sm text-brand-gray-500">{t.admin.loadingTickets}</p>
-      ) : (
-        <div className="overflow-x-auto">
-          <table className="w-full min-w-[640px] text-left text-sm">
-            <thead className="border-b border-brand-gray-200 bg-brand-gray-50">
-              <tr>
-                <th className="px-4 py-3 text-xs font-bold uppercase tracking-wide">
-                  {t.admin.colTicket}
-                </th>
-                <th className="px-4 py-3 text-xs font-bold uppercase tracking-wide">
-                  {t.admin.colCustomer}
-                </th>
-                <th className="px-4 py-3 text-xs font-bold uppercase tracking-wide">
-                  {t.admin.colDevice}
-                </th>
-                <th className="px-4 py-3 text-xs font-bold uppercase tracking-wide">
-                  {t.admin.colEstimate}
-                </th>
-                <th className="px-4 py-3 text-xs font-bold uppercase tracking-wide">
-                  {t.admin.colStatus}
-                </th>
-              </tr>
-            </thead>
-            <tbody>
-              {tickets.length === 0 ? (
+    <div className="space-y-6">
+      <RepairTypesPanel />
+
+      <Panel title={t.admin.tickets}>
+        {error && (
+          <p className="mb-4 text-sm text-red-600" role="alert">
+            {error}
+          </p>
+        )}
+        {loading ? (
+          <p className="text-sm text-brand-gray-500">{t.admin.loadingTickets}</p>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="w-full min-w-[640px] text-left text-sm">
+              <thead className="border-b border-brand-gray-200 bg-brand-gray-50">
                 <tr>
-                  <td colSpan={5} className="px-4 py-12 text-center text-brand-gray-500">
-                    {t.admin.noTickets}
-                  </td>
+                  <th className="px-4 py-3 text-xs font-bold uppercase tracking-wide">
+                    {t.admin.colTicket}
+                  </th>
+                  <th className="px-4 py-3 text-xs font-bold uppercase tracking-wide">
+                    {t.admin.colCustomer}
+                  </th>
+                  <th className="px-4 py-3 text-xs font-bold uppercase tracking-wide">
+                    {t.admin.colDevice}
+                  </th>
+                  <th className="px-4 py-3 text-xs font-bold uppercase tracking-wide">
+                    {t.admin.colEstimate}
+                  </th>
+                  <th className="px-4 py-3 text-xs font-bold uppercase tracking-wide">
+                    {t.admin.colStatus}
+                  </th>
                 </tr>
-              ) : (
-                tickets.map((ticket) => (
-                  <tr key={ticket.id} className="border-b border-brand-gray-100 last:border-0">
-                    <td className="px-4 py-3 font-mono font-bold">{ticket.ticket_id}</td>
-                    <td className="px-4 py-3">
-                      <p className="font-medium">{ticket.customer_name}</p>
-                      <p className="text-xs text-brand-gray-500">{ticket.customer_phone}</p>
-                    </td>
-                    <td className="px-4 py-3">
-                      <p>{ticket.device_brand} {ticket.device_model}</p>
-                      <p className="text-xs text-brand-gray-500">{tIssue(ticket.issue)}</p>
-                    </td>
-                    <td className="px-4 py-3 font-medium">
-                      {formatPrice(Number(ticket.estimated_price))}
-                    </td>
-                    <td className="px-4 py-3">
-                      <select
-                        value={ticket.status}
-                        onChange={(e) =>
-                          handleStatusChange(
-                            ticket.ticket_id,
-                            e.target.value as RepairTicketStatus
-                          )
-                        }
-                        disabled={updatingId === ticket.ticket_id}
-                        className="min-h-[44px] w-full min-w-[160px] border border-brand-gray-300 bg-white px-3 py-2 text-xs font-semibold uppercase disabled:opacity-50"
-                      >
-                        {statusOptions.map((status) => (
-                          <option key={status} value={status}>
-                            {tStatus(status)}
-                          </option>
-                        ))}
-                      </select>
+              </thead>
+              <tbody>
+                {tickets.length === 0 ? (
+                  <tr>
+                    <td
+                      colSpan={5}
+                      className="px-4 py-12 text-center text-brand-gray-500"
+                    >
+                      {t.admin.noTickets}
                     </td>
                   </tr>
-                ))
-              )}
-            </tbody>
-          </table>
-        </div>
-      )}
-    </Panel>
+                ) : (
+                  tickets.map((ticket) => (
+                    <tr
+                      key={ticket.id}
+                      className="border-b border-brand-gray-100 last:border-0"
+                    >
+                      <td className="px-4 py-3 font-mono font-bold">
+                        {ticket.ticket_id}
+                      </td>
+                      <td className="px-4 py-3">
+                        <p className="font-medium">{ticket.customer_name}</p>
+                        <p className="text-xs text-brand-gray-500">
+                          {ticket.customer_phone}
+                        </p>
+                      </td>
+                      <td className="px-4 py-3">
+                        <p>
+                          {ticket.device_brand} {ticket.device_model}
+                        </p>
+                        <p className="text-xs text-brand-gray-500">
+                          {issueLabel(ticket.issue)}
+                        </p>
+                      </td>
+                      <td className="px-4 py-3 font-medium">
+                        {formatPrice(Number(ticket.estimated_price))}
+                      </td>
+                      <td className="px-4 py-3">
+                        <select
+                          value={ticket.status}
+                          onChange={(e) =>
+                            handleStatusChange(
+                              ticket.ticket_id,
+                              e.target.value as RepairTicketStatus
+                            )
+                          }
+                          disabled={updatingId === ticket.ticket_id}
+                          className="min-h-[44px] w-full min-w-[160px] border border-brand-gray-300 bg-white px-3 py-2 text-xs font-semibold uppercase disabled:opacity-50"
+                        >
+                          {statusOptions.map((status) => (
+                            <option key={status} value={status}>
+                              {tStatus(status)}
+                            </option>
+                          ))}
+                        </select>
+                      </td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </Panel>
+    </div>
   );
 }

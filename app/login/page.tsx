@@ -53,7 +53,7 @@ export default function LoginPage() {
 
       await fetch("/api/auth/sync-user", { method: "POST" });
       await refreshUser();
-      router.push("/account");
+      router.push("/");
       router.refresh();
     } catch (err) {
       setError(err instanceof Error ? err.message : t.auth.loginFailed);
