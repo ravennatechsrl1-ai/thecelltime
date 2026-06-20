@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { revalidateTag } from "next/cache";
 import { fetchAllProducts } from "@/lib/admin-analytics";
 import { isAccessorySubtype } from "@/lib/accessories-catalog";
 import { isProtectionSubtype } from "@/lib/protection-catalog";
@@ -53,22 +54,57 @@ export async function POST(request: NextRequest) {
     }
 
     let condition: ProductCondition = null;
-    if (conditionRaw === "new" || conditionRaw === "used") {
-      condition = conditionRaw;
+    let phoneStorage: string | null = null;
+    let phoneColor: string | null = null;
+    if (category === "phones") {
+      const slug = conditionRaw?.trim();
+      if (!slug) {
+        return NextResponse.json(
+          { error: "Condizione obbligatoria per i telefoni." },
+          { status: 400 }
+        );
+      }
+      condition = slug;
+
+      phoneStorage = formData.get("storage")?.toString().trim() ?? null;
+      phoneColor = formData.get("color")?.toString().trim() ?? null;
+      if (!phoneStorage) {
+        return NextResponse.json(
+          { error: "Capacità obbligatoria per i telefoni." },
+          { status: 400 }
+        );
+      }
+      if (!phoneColor) {
+        return NextResponse.json(
+          { error: "Colore obbligatorio per i telefoni." },
+          { status: 400 }
+        );
+      }
     }
 
     const supabase = getSupabaseClient();
 
-    const fileExt = imageFile.name.split(".").pop() ?? "jpg";
-    const fileName = `${Date.now()}-${Math.random().toString(36).slice(2)}.${fileExt}`;
+    const fileExt = (imageFile.name.split(".").pop() ?? "jpg")
+      .toLowerCase()
+      .replace(/[^a-z0-9]/g, "");
+    const safeExt = fileExt || "jpg";
+    const fileName = `${Date.now()}-${Math.random().toString(36).slice(2)}.${safeExt}`;
 
     const arrayBuffer = await imageFile.arrayBuffer();
     const fileBuffer = Buffer.from(arrayBuffer);
 
+    const contentType =
+      imageFile.type ||
+      (safeExt === "png"
+        ? "image/png"
+        : safeExt === "webp"
+          ? "image/webp"
+          : "image/jpeg");
+
     const { error: uploadError } = await supabase.storage
       .from("product-images")
       .upload(fileName, fileBuffer, {
-        contentType: imageFile.type,
+        contentType,
         upsert: false,
       });
 
@@ -95,6 +131,11 @@ export async function POST(request: NextRequest) {
       stock,
       image_url: imageUrl,
     };
+
+    if (category === "phones" && phoneStorage && phoneColor) {
+      insertRow.storage = phoneStorage;
+      insertRow.color = phoneColor;
+    }
 
     if (category === "protection") {
       const protectionDeviceType = formData
@@ -182,6 +223,8 @@ export async function POST(request: NextRequest) {
         { status: 500 }
       );
     }
+
+    revalidateTag("products");
 
     return NextResponse.json({ product: mapProductRow(data as Record<string, unknown>) });
   } catch (error) {

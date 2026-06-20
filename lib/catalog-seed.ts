@@ -63,6 +63,7 @@ export async function ensureCatalogDefaults(
     ensurePhoneBrands,
     ensurePhoneConditions,
     ensurePhoneStorage,
+    ensurePhoneColors,
     ensurePhoneModels,
     ensureDeviceCatalog,
   ];
@@ -123,6 +124,32 @@ async function ensurePhoneStorage(supabase: SupabaseClient): Promise<void> {
   const { error } = await supabase.from("catalog_phone_storage").insert(
     PHONE_STORAGE_OPTIONS.map((label, index) => ({
       label,
+      sort_order: index,
+    }))
+  );
+  if (error) throw error;
+}
+
+const DEFAULT_PHONE_COLORS: { label: string; hex_color: string }[] = [
+  { label: "Black", hex_color: "#1a1a1a" },
+  { label: "White", hex_color: "#f5f5f5" },
+  { label: "Blue", hex_color: "#2563eb" },
+  { label: "Pink", hex_color: "#ec4899" },
+  { label: "Green", hex_color: "#22c55e" },
+  { label: "Gold", hex_color: "#d4af37" },
+  { label: "Silver", hex_color: "#c0c0c0" },
+  { label: "Purple", hex_color: "#7c3aed" },
+  { label: "Red", hex_color: "#ef4444" },
+  { label: "Natural Titanium", hex_color: "#e8dcc8" },
+];
+
+async function ensurePhoneColors(supabase: SupabaseClient): Promise<void> {
+  if ((await tableCount(supabase, "catalog_phone_colors")) > 0) return;
+
+  const { error } = await supabase.from("catalog_phone_colors").insert(
+    DEFAULT_PHONE_COLORS.map((color, index) => ({
+      label: color.label,
+      hex_color: color.hex_color,
       sort_order: index,
     }))
   );

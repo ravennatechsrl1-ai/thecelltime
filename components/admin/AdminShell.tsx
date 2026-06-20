@@ -6,6 +6,7 @@ import SiteLogo from "@/components/SiteLogo";
 export type AdminView =
   | "dashboard"
   | "products"
+  | "catalog"
   | "promotions"
   | "orders"
   | "customers"

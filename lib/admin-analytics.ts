@@ -194,7 +194,7 @@ export async function fetchAllProducts(): Promise<Product[]> {
 
   const { data, error } = await supabase
     .from("products")
-    .select("*")
+    .select("*, phone_listings(base_name)")
     .order("created_at", { ascending: false });
 
   if (error || !data) return [];

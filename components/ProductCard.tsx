@@ -4,10 +4,11 @@ import { useState } from "react";
 import Link from "next/link";
 import SafeImage from "@/components/SafeImage";
 import ProductPriceDisplay, { PromotionBadge } from "@/components/ProductPriceDisplay";
-import { IconUser } from "@/components/icons/NavIcons";
 import { useAuth } from "@/components/AuthProvider";
 import { useLanguage } from "@/components/LanguageProvider";
 import { getCheckoutCustomer, redirectToCheckout } from "@/lib/client-checkout";
+import { productDetailPath } from "@/lib/product-path";
+import { getPhoneListingTitle } from "@/lib/phone-listings";
 import { getEffectivePrice } from "@/lib/product-pricing";
 import { Product } from "@/types";
 
@@ -33,6 +34,9 @@ export default function ProductCard({
       : product.condition === "used"
         ? t.conditions.usedA
         : null;
+  const isPhone = product.category === "phones";
+  const detailHref = productDetailPath(product);
+  const displayName = isPhone ? getPhoneListingTitle(product) : product.name;
   const outOfStock = product.stock <= 0;
   const salePrice = getEffectivePrice(product);
 
@@ -70,14 +74,12 @@ export default function ProductCard({
     }
   }
 
-  return (
-    <article
-      className={`mobilax-product-card flex flex-col ${widthClass}`}
-    >
+  const cardBody = (
+    <>
       <div className="relative flex aspect-square items-center justify-center bg-[#fafafa] p-4">
         <SafeImage
           src={product.image_url}
-          alt={product.name}
+          alt={displayName}
           fill
           className="object-contain p-3"
           sizes={variant === "carousel" ? "200px" : "(max-width: 640px) 50vw, 25vw"}
@@ -99,7 +101,7 @@ export default function ProductCard({
           {product.brand}
         </p>
         <h2 className="mt-1 line-clamp-2 min-h-[2.5rem] text-xs font-medium leading-snug text-brand-black sm:text-sm">
-          {product.name}
+          {displayName}
         </h2>
 
         <div className="mt-2.5">
@@ -130,37 +132,44 @@ export default function ProductCard({
         )}
 
         <div className="mt-3">
-          {user ? (
-            outOfStock ? null : (
-              <div className="space-y-2">
-                <button
-                  type="button"
-                  onClick={onAddToCart}
-                  className="btn-secondary text-[10px] sm:text-xs"
-                >
-                  {t.shop.addToCart}
-                </button>
-                <button
-                  type="button"
-                  onClick={handleBuyNow}
-                  disabled={buying}
-                  className="btn-primary text-[10px] sm:text-xs disabled:cursor-not-allowed disabled:opacity-40"
-                >
-                  {buying ? t.cart.redirecting : t.shop.buyNow}
-                </button>
-              </div>
-            )
-          ) : (
-            <Link
-              href="/login"
-              className="flex min-h-[44px] items-center justify-center gap-1.5 border border-brand-gray-300 bg-white px-3 py-2 text-[10px] font-bold uppercase tracking-wide text-brand-navy transition-all duration-200 hover:border-brand-electric hover:text-brand-electric sm:text-xs"
-            >
-              <IconUser className="h-3.5 w-3.5" />
-              {t.nav.signIn}
-            </Link>
+          {outOfStock ? null : (
+            <div className="space-y-2">
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  onAddToCart();
+                }}
+                className="btn-secondary w-full text-[10px] sm:text-xs"
+              >
+                {t.shop.addToCart}
+              </button>
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  handleBuyNow();
+                }}
+                disabled={buying}
+                className="btn-primary w-full text-[10px] sm:text-xs disabled:cursor-not-allowed disabled:opacity-40"
+              >
+                {buying ? t.cart.redirecting : t.shop.buyNow}
+              </button>
+            </div>
           )}
         </div>
       </div>
-    </article>
+    </>
+  );
+
+  return (
+    <Link
+      href={detailHref}
+      className={`mobilax-product-card group flex flex-col transition-shadow duration-200 hover:shadow-md ${widthClass}`}
+    >
+      {cardBody}
+    </Link>
   );
 }

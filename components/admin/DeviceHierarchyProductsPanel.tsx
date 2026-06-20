@@ -3,7 +3,6 @@
 import { ChangeEvent, FormEvent, useCallback, useEffect, useMemo, useState } from "react";
 import { Panel } from "@/components/admin/AdminShell";
 import AdminProductInventory from "@/components/admin/AdminProductInventory";
-import { AddCatalogOption } from "@/components/admin/AddCatalogOption";
 import { useLanguage } from "@/components/LanguageProvider";
 import {
   DeviceCatalogTree,
@@ -188,17 +187,6 @@ export default function DeviceHierarchyProductsPanel({
     );
   }, [selectedBrand, selectedModel, subtypeLabel, customName, buildName]);
 
-  async function addCatalog(kind: string, payload: Record<string, unknown>) {
-    const response = await fetch("/api/admin/catalog/devices", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ kind, ...payload }),
-    });
-    const data = await response.json();
-    if (!response.ok) throw new Error(data.error ?? "Failed to add option.");
-    await loadCatalog();
-  }
-
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
     if (!imageFile || !selectedBrand || !selectedModel || !selectedSeriesGroup) {
@@ -250,6 +238,13 @@ export default function DeviceHierarchyProductsPanel({
           <p className="text-sm text-brand-gray-500">{t.common.loading}</p>
         ) : (
           <form onSubmit={handleSubmit} className="space-y-5">
+            {brands.length === 0 ||
+            seriesGroups.length === 0 ||
+            modelsInSeries.length === 0 ? (
+              <div className="rounded border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
+                <p>{t.admin.catalogTabHint}</p>
+              </div>
+            ) : null}
             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
               <div>
                 <FieldLabel htmlFor={`${prefix}-device`}>
@@ -288,11 +283,6 @@ export default function DeviceHierarchyProductsPanel({
                     </option>
                   ))}
                 </select>
-                <AddCatalogOption
-                  label={t.admin.addBrand}
-                  placeholder="Apple, Samsung…"
-                  onAdd={(label) => addCatalog("brand", { deviceType, label })}
-                />
               </div>
 
               <div>
@@ -312,12 +302,6 @@ export default function DeviceHierarchyProductsPanel({
                     </option>
                   ))}
                 </select>
-                <AddCatalogOption
-                  label={t.admin.addSeries}
-                  placeholder="Series 17, Galaxy S…"
-                  disabled={!brandId}
-                  onAdd={(label) => addCatalog("series", { brandId, label })}
-                />
               </div>
 
               <div>
@@ -337,12 +321,6 @@ export default function DeviceHierarchyProductsPanel({
                     </option>
                   ))}
                 </select>
-                <AddCatalogOption
-                  label={t.admin.addModel}
-                  placeholder="iPhone 17 Pro Max…"
-                  disabled={!seriesId}
-                  onAdd={(label) => addCatalog("model", { seriesId, label })}
-                />
               </div>
 
               <div>

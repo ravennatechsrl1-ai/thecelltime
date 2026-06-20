@@ -12,6 +12,7 @@ export interface NavDropdownItem {
 export interface NavDropdownGroup {
   label: string;
   items: NavDropdownItem[];
+  viewAll?: NavDropdownItem;
 }
 
 interface NavDropdownProps {
@@ -92,6 +93,15 @@ export default function NavDropdown({
                       {item.label}
                     </Link>
                   ))}
+                  {group.viewAll ? (
+                    <Link
+                      href={group.viewAll.href}
+                      className="mt-1 block px-4 py-2 pl-6 text-xs font-bold uppercase tracking-wide text-brand-electric transition-colors hover:underline"
+                      onClick={() => setOpen(false)}
+                    >
+                      {group.viewAll.label}
+                    </Link>
+                  ) : null}
                 </div>
               ))
             : items.map((item) => (

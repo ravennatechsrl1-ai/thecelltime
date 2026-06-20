@@ -135,32 +135,41 @@ function ProtectionShopContent({
     other: t.protection.subtypeOther,
   };
 
+  const protectionNav = useMemo(
+    () => buildProtectionNavFromProducts(products),
+    [products]
+  );
+
   const title = useMemo(() => {
     if (view.type === "protection-model") {
-      const model = getProtectionModel(
+      const device = protectionNav.find((d) => d.deviceType === view.deviceType);
+      const brand = device?.brands.find((b) => b.slug === view.brandSlug);
+      for (const group of brand?.seriesGroups ?? []) {
+        const model = group.all.find((m) => m.slug === view.modelSlug);
+        if (model) return model.label;
+      }
+      const catalogModel = getProtectionModel(
         view.deviceType,
         view.brandSlug,
         view.modelSlug
       );
-      const brand = getProtectionBrand(view.deviceType, view.brandSlug);
-      return model?.label ?? brand?.label ?? t.protection.title;
+      if (catalogModel?.label) return catalogModel.label;
+      return view.modelSlug.replace(/-/g, " ");
     }
     if (view.type === "protection-brand") {
+      const device = protectionNav.find((d) => d.deviceType === view.deviceType);
+      const brand = device?.brands.find((b) => b.slug === view.brandSlug);
+      if (brand?.label) return brand.label;
       return (
         getProtectionBrand(view.deviceType, view.brandSlug)?.label ??
-        t.protection.title
+        view.brandSlug.replace(/-/g, " ")
       );
     }
     if (view.type === "protection-device") {
       return deviceLabels[view.deviceType];
     }
     return t.protection.title;
-  }, [view, t, deviceLabels]);
-
-  const protectionNav = useMemo(
-    () => buildProtectionNavFromProducts(products),
-    [products]
-  );
+  }, [view, t, deviceLabels, protectionNav]);
 
   const activeDevice =
     view.type === "protection-device" ||

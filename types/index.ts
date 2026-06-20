@@ -23,6 +23,14 @@ export interface Product {
   accessory_model_slug?: string | null;
   accessory_series?: string | null;
   accessory_subtype?: string | null;
+  /** Phone storage label (e.g. 128GB) */
+  storage?: string | null;
+  /** Phone color label (e.g. Black) */
+  color?: string | null;
+  /** Parent phone listing (one card in shop) */
+  phone_listing_id?: string | null;
+  /** Denormalized listing title without storage/color */
+  phone_listing_base_name?: string | null;
 }
 
 export type RepairTicketStatus =

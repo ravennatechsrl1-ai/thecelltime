@@ -3,6 +3,7 @@
 import { FormEvent, useCallback, useEffect, useMemo, useState } from "react";
 import SiteLogo from "@/components/SiteLogo";
 import {
+  IconBrands,
   IconCustomers,
   IconDashboard,
   IconOrders,
@@ -12,6 +13,7 @@ import {
 } from "@/components/admin/AdminStatIcons";
 import AdminShell, { AdminView } from "@/components/admin/AdminShell";
 import CatalogProductsPanel from "@/components/admin/CatalogProductsPanel";
+import CatalogPanel from "@/components/admin/BrandsPanel";
 import CustomersPanel from "@/components/admin/CustomersPanel";
 import DashboardOverview from "@/components/admin/DashboardOverview";
 import OrdersPanel from "@/components/admin/OrdersPanel";
@@ -44,6 +46,11 @@ export default function AdminPage() {
         label: t.admin.navProducts,
         badge: stats?.lowStockCount,
         icon: <IconProducts className={navIconClass} />,
+      },
+      {
+        id: "catalog" as const,
+        label: t.admin.navCatalog,
+        icon: <IconBrands className={navIconClass} />,
       },
       {
         id: "promotions" as const,
@@ -212,6 +219,7 @@ export default function AdminPage() {
         />
       )}
       {activeView === "products" && <CatalogProductsPanel />}
+      {activeView === "catalog" && <CatalogPanel />}
       {activeView === "promotions" && <PromotionsPanel />}
       {activeView === "orders" && <OrdersPanel />}
       {activeView === "customers" && <CustomersPanel />}

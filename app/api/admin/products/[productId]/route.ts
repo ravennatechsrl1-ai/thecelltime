@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { revalidateTag } from "next/cache";
 import { mapProductRow } from "@/lib/map-product";
 import { getSupabaseClient } from "@/utils/supabase";
 import { ProductCondition } from "@/types";
@@ -74,6 +75,13 @@ export async function PATCH(
       condition: existing.category === "phones" ? condition : null,
     };
 
+    if (existing.category === "phones") {
+      const storageLabel = formData.get("storage")?.toString().trim();
+      const colorLabel = formData.get("color")?.toString().trim();
+      if (storageLabel) updates.storage = storageLabel;
+      if (colorLabel) updates.color = colorLabel;
+    }
+
     if (imageFile instanceof File && imageFile.size > 0) {
       const fileExt = imageFile.name.split(".").pop() ?? "jpg";
       const fileName = `${Date.now()}-${Math.random().toString(36).slice(2)}.${fileExt}`;
@@ -122,6 +130,8 @@ export async function PATCH(
       );
     }
 
+    revalidateTag("products");
+
     return NextResponse.json({ product: mapProductRow(data) });
   } catch (error) {
     console.error("[admin/products/patch]", error);
@@ -164,6 +174,8 @@ export async function DELETE(
         { status: 500 }
       );
     }
+
+    revalidateTag("products");
 
     const fileName = extractStorageFileName(existing.image_url as string);
     if (fileName) {

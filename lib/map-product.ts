@@ -1,5 +1,14 @@
 import { Product, ProductCategory, ProductCondition } from "@/types";
 
+function readListingBaseName(row: Record<string, unknown>): string | null {
+  const nested = row.phone_listings;
+  if (nested && typeof nested === "object" && !Array.isArray(nested)) {
+    const base = (nested as { base_name?: unknown }).base_name;
+    if (typeof base === "string" && base.trim()) return base.trim();
+  }
+  return null;
+}
+
 export function mapProductRow(row: Record<string, unknown>): Product {
   const promotionRaw = row.promotion_percent;
   const promotion_percent =
@@ -32,5 +41,9 @@ export function mapProductRow(row: Record<string, unknown>): Product {
     accessory_model_slug: (row.accessory_model_slug as string) ?? null,
     accessory_series: (row.accessory_series as string) ?? null,
     accessory_subtype: (row.accessory_subtype as string) ?? null,
+    storage: (row.storage as string) ?? null,
+    color: (row.color as string) ?? null,
+    phone_listing_id: (row.phone_listing_id as string) ?? null,
+    phone_listing_base_name: readListingBaseName(row),
   };
 }

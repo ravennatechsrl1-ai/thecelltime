@@ -26,6 +26,12 @@ export interface PhoneStorageOption {
   label: string;
 }
 
+export interface PhoneColorOption {
+  id: string;
+  label: string;
+  hex_color: string;
+}
+
 export interface DeviceBrandOption {
   id: string;
   device_type: ProtectionDeviceType;
@@ -59,6 +65,7 @@ export interface PhoneCatalog {
   models: PhoneModelOption[];
   conditions: PhoneConditionOption[];
   storage: PhoneStorageOption[];
+  colors: PhoneColorOption[];
 }
 
 export const EMPTY_PHONE_CATALOG: PhoneCatalog = {
@@ -66,6 +73,7 @@ export const EMPTY_PHONE_CATALOG: PhoneCatalog = {
   models: [],
   conditions: [],
   storage: [],
+  colors: [],
 };
 
 export const EMPTY_DEVICE_CATALOG: DeviceCatalogTree = {
@@ -90,6 +98,9 @@ export function normalizePhoneCatalog(data: unknown): PhoneCatalog {
     storage: Array.isArray(record.storage)
       ? (record.storage as PhoneStorageOption[])
       : [],
+    colors: Array.isArray(record.colors)
+      ? (record.colors as PhoneColorOption[])
+      : [],
   };
 }
 
@@ -110,7 +121,7 @@ export function normalizeDeviceCatalog(data: unknown): DeviceCatalogTree {
 }
 
 export async function fetchPhoneCatalog(supabase: SupabaseClient): Promise<PhoneCatalog> {
-  const [brandsRes, modelsRes, conditionsRes, storageRes] = await Promise.all([
+  const [brandsRes, modelsRes, conditionsRes, storageRes, colorsRes] = await Promise.all([
     supabase
       .from("catalog_phone_brands")
       .select("*")
@@ -131,18 +142,25 @@ export async function fetchPhoneCatalog(supabase: SupabaseClient): Promise<Phone
       .select("*")
       .order("sort_order")
       .order("label"),
+    supabase
+      .from("catalog_phone_colors")
+      .select("*")
+      .order("sort_order")
+      .order("label"),
   ]);
 
   if (brandsRes.error) throw brandsRes.error;
   if (modelsRes.error) throw modelsRes.error;
   if (conditionsRes.error) throw conditionsRes.error;
   if (storageRes.error) throw storageRes.error;
+  if (colorsRes.error) throw colorsRes.error;
 
   return {
     brands: (brandsRes.data ?? []) as PhoneBrandOption[],
     models: (modelsRes.data ?? []) as PhoneModelOption[],
     conditions: (conditionsRes.data ?? []) as PhoneConditionOption[],
     storage: (storageRes.data ?? []) as PhoneStorageOption[],
+    colors: (colorsRes.data ?? []) as PhoneColorOption[],
   };
 }
 

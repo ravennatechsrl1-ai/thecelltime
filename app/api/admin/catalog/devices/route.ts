@@ -1,9 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
+import { revalidateTag } from "next/cache";
 import {
   fetchDeviceCatalog,
   EMPTY_DEVICE_CATALOG,
 } from "@/lib/catalog-service";
-import { ensureBrandsSynced, syncBrandGlobally, slugify } from "@/lib/catalog-brands-sync";
+import { addDeviceCatalogBrand, slugify } from "@/lib/catalog-brands-sync";
 import { ensureCatalogDefaults } from "@/lib/catalog-seed";
 import {
   isProtectionDeviceType,
@@ -50,17 +51,13 @@ export async function POST(request: Request) {
       }
       await ensureCatalogDefaults(supabase);
       const slug = body.slug?.toString().trim() || slugify(label);
-      await syncBrandGlobally(supabase, { slug, label });
-      const { data, error } = await supabase
-        .from("catalog_device_brands")
-        .select("*")
-        .eq("device_type", deviceType)
-        .eq("slug", slug)
-        .single();
-      if (error) {
-        return NextResponse.json({ error: error.message }, { status: 400 });
-      }
-      return NextResponse.json({ item: data });
+      const item = await addDeviceCatalogBrand(supabase, {
+        device_type: deviceType,
+        slug,
+        label,
+      });
+      revalidateTag("catalog-brands");
+      return NextResponse.json({ item });
     }
 
     if (kind === "series") {

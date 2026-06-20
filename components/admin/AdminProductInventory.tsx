@@ -38,6 +38,8 @@ export default function AdminProductInventory({
   onReload,
   showCondition = false,
   conditionOptions,
+  storageOptions,
+  colorOptions,
   extraColumns,
   renderExtraCells,
 }: {
@@ -46,6 +48,8 @@ export default function AdminProductInventory({
   onReload: () => void;
   showCondition?: boolean;
   conditionOptions?: { slug: string; label: string }[];
+  storageOptions?: string[];
+  colorOptions?: { label: string; hex_color?: string }[];
   extraColumns?: { key: string; label: string }[];
   renderExtraCells?: (product: Product) => React.ReactNode;
 }) {
@@ -62,6 +66,8 @@ export default function AdminProductInventory({
   const [editCondition, setEditCondition] = useState<ProductCondition>("new");
   const [editPrice, setEditPrice] = useState("");
   const [editStock, setEditStock] = useState("");
+  const [editStorage, setEditStorage] = useState("");
+  const [editColor, setEditColor] = useState("");
   const [editImageFile, setEditImageFile] = useState<File | null>(null);
   const [editSaving, setEditSaving] = useState(false);
   const [deletingId, setDeletingId] = useState<string | null>(null);
@@ -128,6 +134,8 @@ export default function AdminProductInventory({
     setEditCondition(product.condition ?? "new");
     setEditPrice(String(product.price));
     setEditStock(String(product.stock));
+    setEditStorage(product.storage ?? "");
+    setEditColor(product.color ?? "");
     setEditImageFile(null);
     setMessage(null);
     setError(null);
@@ -161,6 +169,8 @@ export default function AdminProductInventory({
     formData.append("stock", editStock);
     if (showCondition) {
       formData.append("condition", editCondition ?? "");
+      if (editStorage) formData.append("storage", editStorage);
+      if (editColor) formData.append("color", editColor);
     }
     if (editImageFile) {
       formData.append("image", editImageFile);
@@ -430,6 +440,40 @@ export default function AdminProductInventory({
                   >
                     {(conditionOptions ?? []).map((c) => (
                       <option key={c.slug} value={c.slug}>
+                        {c.label}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              )}
+              {showCondition && (storageOptions?.length ?? 0) > 0 && (
+                <div>
+                  <FieldLabel htmlFor="edit-storage">{t.admin.phoneStorage}</FieldLabel>
+                  <select
+                    id="edit-storage"
+                    value={editStorage}
+                    onChange={(e) => setEditStorage(e.target.value)}
+                    className="input-field"
+                  >
+                    {storageOptions!.map((label) => (
+                      <option key={label} value={label}>
+                        {label}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              )}
+              {showCondition && (colorOptions?.length ?? 0) > 0 && (
+                <div>
+                  <FieldLabel htmlFor="edit-color">{t.admin.phoneColor}</FieldLabel>
+                  <select
+                    id="edit-color"
+                    value={editColor}
+                    onChange={(e) => setEditColor(e.target.value)}
+                    className="input-field"
+                  >
+                    {colorOptions!.map((c) => (
+                      <option key={c.label} value={c.label}>
                         {c.label}
                       </option>
                     ))}

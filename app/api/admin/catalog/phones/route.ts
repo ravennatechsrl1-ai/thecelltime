@@ -4,13 +4,14 @@ import {
   fetchPhoneCatalog,
   EMPTY_PHONE_CATALOG,
 } from "@/lib/catalog-service";
-import { syncBrandGlobally, slugify } from "@/lib/catalog-brands-sync";
+import { addPhoneCatalogBrand, slugify } from "@/lib/catalog-brands-sync";
 import { ensureCatalogDefaults } from "@/lib/catalog-seed";
 import { getSupabaseClient } from "@/utils/supabase";
 
 export async function GET() {
   try {
     const supabase = getSupabaseClient();
+    await ensureCatalogDefaults(supabase);
     const catalog = await fetchPhoneCatalog(supabase);
     return NextResponse.json(catalog);
   } catch (error) {
@@ -40,7 +41,7 @@ export async function POST(request: Request) {
       }
       await ensureCatalogDefaults(supabase);
       const slug = body.slug?.toString().trim() || slugify(label);
-      const item = await syncBrandGlobally(supabase, { slug, label });
+      const item = await addPhoneCatalogBrand(supabase, { slug, label });
       invalidatePhoneCatalog();
       return NextResponse.json({ item });
     }
@@ -82,6 +83,7 @@ export async function POST(request: Request) {
       if (error) {
         return NextResponse.json({ error: error.message }, { status: 400 });
       }
+      invalidatePhoneCatalog();
       return NextResponse.json({ item: data });
     }
 
@@ -98,6 +100,27 @@ export async function POST(request: Request) {
       if (error) {
         return NextResponse.json({ error: error.message }, { status: 400 });
       }
+      return NextResponse.json({ item: data });
+    }
+
+    if (kind === "color") {
+      const label = body.label?.toString().trim();
+      if (!label) {
+        return NextResponse.json({ error: "Colore obbligatorio." }, { status: 400 });
+      }
+      const hexRaw = body.hexColor?.toString().trim() ?? "#64748b";
+      const hex_color = /^#[0-9a-fA-F]{6}$/.test(hexRaw)
+        ? hexRaw.toLowerCase()
+        : "#64748b";
+      const { data, error } = await supabase
+        .from("catalog_phone_colors")
+        .insert({ label, hex_color })
+        .select("*")
+        .single();
+      if (error) {
+        return NextResponse.json({ error: error.message }, { status: 400 });
+      }
+      invalidatePhoneCatalog();
       return NextResponse.json({ item: data });
     }
 

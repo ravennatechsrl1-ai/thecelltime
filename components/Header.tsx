@@ -14,8 +14,8 @@ import SiteLogo from "@/components/SiteLogo";
 import { useAuth } from "@/components/AuthProvider";
 import { useHydrated } from "@/hooks/useHydrated";
 import { useCatalogBrands } from "@/hooks/useCatalogBrands";
+import { buildBrandNavGroups } from "@/lib/brand-nav-groups";
 import { buildPhoneNavGroups } from "@/lib/nav-phone-brands";
-import { shopAllBrandsPath, shopBrandCatalogPath, PHONE_BRANDS } from "@/lib/phone-brands";
 import {
   IconAccessories,
   IconBrands,
@@ -43,20 +43,6 @@ export default function Header() {
 
   const navCategories = useMemo(
     () => {
-      const brandsForNav =
-        catalogBrands.length > 0
-          ? catalogBrands
-          : PHONE_BRANDS.map((brand) => ({
-              slug: brand.slug,
-              label: t.nav[brand.labelKey],
-            }));
-
-      const brandItems = brandsForNav.map((brand) => ({
-        href: shopBrandCatalogPath(brand.slug),
-        label: brand.label,
-      }));
-      brandItems.push({ href: shopAllBrandsPath(), label: t.nav.allBrands });
-
       return [
       {
         id: "brands",
@@ -66,7 +52,7 @@ export default function Header() {
             <IconBrands className="h-4 w-4" />
           </NavIconWrap>
         ),
-        items: brandItems,
+        groups: buildBrandNavGroups(t, catalogBrands),
       },
       {
         id: "repair",

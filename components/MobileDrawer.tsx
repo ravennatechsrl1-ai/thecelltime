@@ -112,6 +112,17 @@ export default function MobileDrawer({
                                   </Link>
                                 </li>
                               ))}
+                              {group.viewAll ? (
+                                <li>
+                                  <Link
+                                    href={group.viewAll.href}
+                                    onClick={onClose}
+                                    className="block py-1.5 pl-2 text-xs font-bold uppercase tracking-wide text-brand-electric"
+                                  >
+                                    {group.viewAll.label}
+                                  </Link>
+                                </li>
+                              ) : null}
                             </ul>
                           </div>
                         ))

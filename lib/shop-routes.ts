@@ -3,14 +3,10 @@ import {
   accessorySlugToSubtype,
   AccessoryDeviceType,
   AccessorySubtype,
-  isAccessoryBrandSlug,
   isAccessoryDeviceType,
-  isAccessoryModelSlug,
 } from "@/lib/accessories-catalog";
 import {
-  isProtectionBrandSlug,
   isProtectionDeviceType,
-  isProtectionModelSlug,
   ProtectionDeviceType,
   protectionSlugToSubtype,
   ProtectionSubtype,
@@ -83,10 +79,7 @@ export function parseShopSegments(segments?: string[]): ShopView | null {
       if (segments.length === 2) {
         return { type: "accessories-device", deviceType };
       }
-      if (
-        segments.length === 3 &&
-        isAccessoryBrandSlug(deviceType, segments[2])
-      ) {
+      if (segments.length === 3 && isBrandSlug(segments[2])) {
         return {
           type: "accessories-brand",
           deviceType,
@@ -95,8 +88,8 @@ export function parseShopSegments(segments?: string[]): ShopView | null {
       }
       if (
         segments.length === 4 &&
-        isAccessoryBrandSlug(deviceType, segments[2]) &&
-        isAccessoryModelSlug(deviceType, segments[2], segments[3])
+        isBrandSlug(segments[2]) &&
+        isBrandSlug(segments[3])
       ) {
         return {
           type: "accessories-model",
@@ -134,11 +127,7 @@ export function parseShopSegments(segments?: string[]): ShopView | null {
     if (segments.length === 2 && isProtectionDeviceType(segments[1])) {
       return { type: "protection-device", deviceType: segments[1] };
     }
-    if (
-      segments.length === 3 &&
-      isProtectionDeviceType(segments[1]) &&
-      isProtectionBrandSlug(segments[1], segments[2])
-    ) {
+    if (segments.length === 3 && isProtectionDeviceType(segments[1]) && isBrandSlug(segments[2])) {
       return {
         type: "protection-brand",
         deviceType: segments[1],
@@ -148,8 +137,8 @@ export function parseShopSegments(segments?: string[]): ShopView | null {
     if (
       segments.length === 4 &&
       isProtectionDeviceType(segments[1]) &&
-      isProtectionBrandSlug(segments[1], segments[2]) &&
-      isProtectionModelSlug(segments[1], segments[2], segments[3])
+      isBrandSlug(segments[2]) &&
+      isBrandSlug(segments[3])
     ) {
       return {
         type: "protection-model",

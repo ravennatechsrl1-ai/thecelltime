@@ -3,12 +3,12 @@
 import { ChangeEvent, FormEvent, useCallback, useEffect, useMemo, useState } from "react";
 import { Panel } from "@/components/admin/AdminShell";
 import AdminProductInventory from "@/components/admin/AdminProductInventory";
-import { AddCatalogOption } from "@/components/admin/AddCatalogOption";
 import { useLanguage } from "@/components/LanguageProvider";
 import { buildPhoneProductName } from "@/lib/admin-catalog";
 import {
   normalizePhoneCatalog,
   PhoneBrandOption,
+  PhoneColorOption,
   PhoneConditionOption,
   PhoneModelOption,
   PhoneStorageOption,
@@ -39,6 +39,30 @@ interface PhoneCatalog {
   models: PhoneModelOption[];
   conditions: PhoneConditionOption[];
   storage: PhoneStorageOption[];
+  colors: PhoneColorOption[];
+}
+
+interface VariantDraft {
+  key: string;
+  storage: string;
+  color: string;
+  price: string;
+  stock: string;
+  imageFile: File | null;
+}
+
+function createVariantDraft(
+  storage = "",
+  color = ""
+): VariantDraft {
+  return {
+    key: `${Date.now()}-${Math.random().toString(36).slice(2)}`,
+    storage,
+    color,
+    price: "",
+    stock: "",
+    imageFile: null,
+  };
 }
 
 export default function MobilesProductsPanel() {
@@ -48,6 +72,7 @@ export default function MobilesProductsPanel() {
     models: [],
     conditions: [],
     storage: [],
+    colors: [],
   });
   const [catalogLoading, setCatalogLoading] = useState(true);
   const [catalogLoadError, setCatalogLoadError] = useState<string | null>(null);
@@ -60,11 +85,8 @@ export default function MobilesProductsPanel() {
   const [brandId, setBrandId] = useState("");
   const [modelId, setModelId] = useState("");
   const [customModel, setCustomModel] = useState("");
-  const [storage, setStorage] = useState("");
   const [condition, setCondition] = useState<ProductCondition>("new");
-  const [price, setPrice] = useState("");
-  const [stock, setStock] = useState("");
-  const [imageFile, setImageFile] = useState<File | null>(null);
+  const [variants, setVariants] = useState<VariantDraft[]>([createVariantDraft()]);
 
   const loadCatalog = useCallback(async () => {
     setCatalogLoading(true);
@@ -85,7 +107,7 @@ export default function MobilesProductsPanel() {
       }
       setCatalog(normalized);
     } catch {
-      setCatalog({ brands: [], models: [], conditions: [], storage: [] });
+      setCatalog({ brands: [], models: [], conditions: [], storage: [], colors: [] });
       setCatalogLoadError(t.admin.uploadError);
     } finally {
       setCatalogLoading(false);
@@ -112,25 +134,41 @@ export default function MobilesProductsPanel() {
 
   useEffect(() => {
     const brands = catalog.brands ?? [];
-    const conditions = catalog.conditions ?? [];
-    const storageOptions = catalog.storage ?? [];
-
     if (brands[0] && !brandId) {
       setBrandId(brands[0].id);
     }
-    if (conditions.length > 0) {
-      const hasCurrent = conditions.some((c) => c.slug === condition);
-      if (!hasCurrent) {
-        setCondition(conditions[0].slug);
-      }
+  }, [catalog.brands, brandId]);
+
+  useEffect(() => {
+    const conditions = catalog.conditions ?? [];
+    if (conditions.length === 0) return;
+    if (!conditions.some((c) => c.slug === condition)) {
+      setCondition(conditions[0].slug);
     }
-    if (storageOptions.length > 0) {
-      const hasCurrent = storageOptions.some((s) => s.label === storage);
-      if (!hasCurrent) {
-        setStorage(storageOptions[0].label);
+  }, [catalog.conditions, condition]);
+
+  useEffect(() => {
+    const storageOptions = catalog.storage ?? [];
+    const colorOptions = catalog.colors ?? [];
+    if (storageOptions.length === 0 && colorOptions.length === 0) return;
+
+    setVariants((current) => {
+      if (current.length === 0) {
+        return [
+          createVariantDraft(
+            storageOptions[0]?.label ?? "",
+            colorOptions[0]?.label ?? ""
+          ),
+        ];
       }
-    }
-  }, [catalog, brandId, condition, storage]);
+
+      return current.map((row, index) => ({
+        ...row,
+        storage: row.storage || storageOptions[index % storageOptions.length]?.label || "",
+        color: row.color || colorOptions[index % colorOptions.length]?.label || "",
+      }));
+    });
+  }, [catalog.storage, catalog.colors]);
 
   const selectedBrand = (catalog.brands ?? []).find((b) => b.id === brandId);
   const modelsForBrand = useMemo(
@@ -153,53 +191,91 @@ export default function MobilesProductsPanel() {
     return modelsForBrand.find((m) => m.id === modelId)?.label ?? "";
   }, [modelId, customModel, modelsForBrand]);
 
-  const previewName = useMemo(() => {
-    if (!selectedBrand || !modelLabel || !storage) return "";
-    return buildPhoneProductName(selectedBrand.label, modelLabel, storage);
-  }, [selectedBrand, modelLabel, storage]);
+  const baseName = useMemo(() => {
+    if (!selectedBrand || !modelLabel) return "";
+    return buildPhoneProductName(selectedBrand.label, modelLabel, "", "");
+  }, [selectedBrand, modelLabel]);
 
-  async function addCatalog(kind: string, payload: Record<string, unknown>) {
-    const response = await fetch("/api/admin/catalog/phones", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ kind, ...payload }),
-    });
-    const data = await response.json();
-    if (!response.ok) throw new Error(data.error ?? "Failed to add option.");
-    await loadCatalog();
+  function updateVariant(key: string, patch: Partial<VariantDraft>) {
+    setVariants((rows) =>
+      rows.map((row) => (row.key === key ? { ...row, ...patch } : row))
+    );
+  }
+
+  function addVariantRow() {
+    const storageOptions = catalog.storage ?? [];
+    const colorOptions = catalog.colors ?? [];
+    setVariants((rows) => [
+      ...rows,
+      createVariantDraft(
+        storageOptions[rows.length % storageOptions.length]?.label ?? "",
+        colorOptions[rows.length % colorOptions.length]?.label ?? ""
+      ),
+    ]);
+  }
+
+  function removeVariantRow(key: string) {
+    setVariants((rows) => (rows.length <= 1 ? rows : rows.filter((r) => r.key !== key)));
   }
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
-    if (!imageFile || !selectedBrand || !modelLabel) {
+    if (!selectedBrand || !modelLabel) {
       setError(t.admin.uploadError);
       return;
     }
+
+    for (const row of variants) {
+      if (!row.storage || !row.color || !row.price || !row.stock || !row.imageFile) {
+        setError(t.admin.uploadError);
+        return;
+      }
+    }
+
+    const comboKeys = variants.map(
+      (row) => `${row.storage.toLowerCase()}|${row.color.toLowerCase()}`
+    );
+    if (new Set(comboKeys).size !== comboKeys.length) {
+      setError(t.admin.uploadError);
+      return;
+    }
+
     setSubmitting(true);
     setError(null);
     setSuccess(null);
 
     const formData = new FormData();
-    formData.append("name", previewName);
     formData.append("brand", selectedBrand.label);
-    formData.append("category", "phones");
+    formData.append("phone_model", modelLabel);
     formData.append("condition", condition ?? "");
-    formData.append("price", price);
-    formData.append("stock", stock);
-    formData.append("image", imageFile);
+    formData.append(
+      "variants",
+      JSON.stringify(
+        variants.map((row) => ({
+          storage: row.storage,
+          color: row.color,
+          price: parseFloat(row.price),
+          stock: parseInt(row.stock, 10),
+        }))
+      )
+    );
+
+    variants.forEach((row, index) => {
+      if (row.imageFile) {
+        formData.append(`image_${index}`, row.imageFile);
+      }
+    });
 
     try {
-      const response = await fetch("/api/admin/products", {
+      const response = await fetch("/api/admin/phone-listings", {
         method: "POST",
         body: formData,
       });
       const data = await response.json();
       if (!response.ok) throw new Error(data.error ?? t.admin.uploadError);
-      setSuccess(`${previewName} — ${t.admin.uploadSuccess}`);
-      setPrice("");
-      setStock("");
+      setSuccess(`${baseName} — ${t.admin.uploadSuccess}`);
       setCustomModel("");
-      setImageFile(null);
+      setVariants([createVariantDraft()]);
       await loadProducts();
     } catch (err) {
       setError(err instanceof Error ? err.message : t.admin.uploadError);
@@ -220,20 +296,20 @@ export default function MobilesProductsPanel() {
                 {catalogLoadError}
               </p>
             ) : null}
-            {(catalog.brands ?? []).length === 0 ||
-            (catalog.conditions ?? []).length === 0 ||
-            (catalog.storage ?? []).length === 0 ? (
+            {(catalog.brands ?? []).length === 0 ? (
               <div className="rounded border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
-                <p>{t.admin.catalogEmptyHint}</p>
-                <button
-                  type="button"
-                  onClick={() => void loadCatalog()}
-                  className="mt-2 text-xs font-bold uppercase tracking-wide text-brand-electric underline"
-                >
-                  {t.errors.retry}
-                </button>
+                <p>{t.admin.catalogTabHint}</p>
               </div>
             ) : null}
+            {(catalog.conditions ?? []).length === 0 ||
+            (catalog.storage ?? []).length === 0 ||
+            (catalog.colors ?? []).length === 0 ||
+            (modelsForBrand.length === 0 && modelId !== CUSTOM_MODEL) ? (
+              <div className="rounded border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
+                <p>{t.admin.catalogEmptyHint}</p>
+              </div>
+            ) : null}
+
             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
               <div>
                 <FieldLabel htmlFor="mob-brand">{t.admin.brand}</FieldLabel>
@@ -253,11 +329,6 @@ export default function MobilesProductsPanel() {
                     </option>
                   ))}
                 </select>
-                <AddCatalogOption
-                  label={t.admin.addBrand}
-                  placeholder="Samsung, Apple…"
-                  onAdd={(label) => addCatalog("brand", { label })}
-                />
               </div>
 
               <div>
@@ -278,11 +349,6 @@ export default function MobilesProductsPanel() {
                     </option>
                   ))}
                 </select>
-                <AddCatalogOption
-                  label={t.admin.addCondition}
-                  placeholder="Grade B Used…"
-                  onAdd={(label) => addCatalog("condition", { label, shopGroup: "used" })}
-                />
               </div>
 
               <div>
@@ -310,64 +376,6 @@ export default function MobilesProductsPanel() {
                     required
                   />
                 )}
-                <AddCatalogOption
-                  label={t.admin.addModel}
-                  placeholder="iPhone 17 Pro Max…"
-                  disabled={!brandId}
-                  onAdd={(label) => addCatalog("model", { brandId, label })}
-                />
-              </div>
-
-              <div>
-                <FieldLabel htmlFor="mob-storage">{t.admin.phoneStorage}</FieldLabel>
-                <select
-                  id="mob-storage"
-                  value={storage}
-                  onChange={(e) => setStorage(e.target.value)}
-                  className="input-field"
-                  required
-                >
-                  {(catalog.storage ?? []).length === 0 ? (
-                    <option value="">{t.admin.selectStorage}</option>
-                  ) : null}
-                  {(catalog.storage ?? []).map((s) => (
-                    <option key={s.id} value={s.label}>
-                      {s.label}
-                    </option>
-                  ))}
-                </select>
-                <AddCatalogOption
-                  label={t.admin.addStorage}
-                  placeholder="2TB…"
-                  onAdd={(label) => addCatalog("storage", { label })}
-                />
-              </div>
-
-              <div>
-                <FieldLabel htmlFor="mob-price">{t.admin.price}</FieldLabel>
-                <input
-                  id="mob-price"
-                  type="number"
-                  min="0"
-                  step="0.01"
-                  value={price}
-                  onChange={(e) => setPrice(e.target.value)}
-                  required
-                  className="input-field"
-                />
-              </div>
-
-              <div>
-                <FieldLabel htmlFor="mob-stock">{t.admin.stock}</FieldLabel>
-                <input
-                  id="mob-stock"
-                  type="number"
-                  min="0"
-                  value={stock}
-                  onChange={(e) => setStock(e.target.value)}
-                  required
-                  className="input-field"
-                />
               </div>
             </div>
 
@@ -376,22 +384,151 @@ export default function MobilesProductsPanel() {
                 {t.admin.productName}
               </p>
               <p className="mt-1 text-sm font-semibold text-brand-navy">
-                {previewName || "—"}
+                {baseName || "—"}
               </p>
             </div>
 
-            <div>
-              <FieldLabel htmlFor="mob-image">{t.admin.image}</FieldLabel>
-              <input
-                id="mob-image"
-                type="file"
-                accept="image/*"
-                onChange={(e: ChangeEvent<HTMLInputElement>) =>
-                  setImageFile(e.target.files?.[0] ?? null)
-                }
-                required
-                className="input-field"
-              />
+            <div className="space-y-4">
+              <div className="flex items-center justify-between gap-3">
+                <p className="text-sm font-semibold text-brand-navy">
+                  {t.admin.variantsSection}
+                </p>
+                <button
+                  type="button"
+                  onClick={addVariantRow}
+                  className="text-xs font-bold uppercase tracking-wide text-brand-electric hover:underline"
+                >
+                  + {t.admin.addVariant}
+                </button>
+              </div>
+
+              {variants.map((row, index) => (
+                <div
+                  key={row.key}
+                  className="space-y-4 rounded border border-brand-gray-200 bg-white p-4"
+                >
+                  <div className="flex items-center justify-between gap-3">
+                    <p className="text-xs font-bold uppercase tracking-wide text-brand-gray-500">
+                      {t.admin.variantNumber.replace("{number}", String(index + 1))}
+                    </p>
+                    {variants.length > 1 ? (
+                      <button
+                        type="button"
+                        onClick={() => removeVariantRow(row.key)}
+                        className="text-xs font-bold uppercase tracking-wide text-red-600 hover:underline"
+                      >
+                        {t.admin.removeVariant}
+                      </button>
+                    ) : null}
+                  </div>
+
+                  <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+                    <div>
+                      <FieldLabel htmlFor={`mob-storage-${row.key}`}>
+                        {t.admin.phoneStorage}
+                      </FieldLabel>
+                      <select
+                        id={`mob-storage-${row.key}`}
+                        value={row.storage}
+                        onChange={(e) =>
+                          updateVariant(row.key, { storage: e.target.value })
+                        }
+                        className="input-field"
+                        required
+                      >
+                        {(catalog.storage ?? []).map((s) => (
+                          <option key={s.id} value={s.label}>
+                            {s.label}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+
+                    <div>
+                      <FieldLabel htmlFor={`mob-color-${row.key}`}>
+                        {t.admin.phoneColor}
+                      </FieldLabel>
+                      <select
+                        id={`mob-color-${row.key}`}
+                        value={row.color}
+                        onChange={(e) =>
+                          updateVariant(row.key, { color: e.target.value })
+                        }
+                        className="input-field"
+                        required
+                      >
+                        {(catalog.colors ?? []).map((c) => (
+                          <option key={c.id} value={c.label}>
+                            {c.label}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+
+                    <div>
+                      <FieldLabel htmlFor={`mob-price-${row.key}`}>
+                        {t.admin.price}
+                      </FieldLabel>
+                      <input
+                        id={`mob-price-${row.key}`}
+                        type="number"
+                        min="0"
+                        step="0.01"
+                        value={row.price}
+                        onChange={(e) =>
+                          updateVariant(row.key, { price: e.target.value })
+                        }
+                        required
+                        className="input-field"
+                      />
+                    </div>
+
+                    <div>
+                      <FieldLabel htmlFor={`mob-stock-${row.key}`}>
+                        {t.admin.stock}
+                      </FieldLabel>
+                      <input
+                        id={`mob-stock-${row.key}`}
+                        type="number"
+                        min="0"
+                        value={row.stock}
+                        onChange={(e) =>
+                          updateVariant(row.key, { stock: e.target.value })
+                        }
+                        required
+                        className="input-field"
+                      />
+                    </div>
+                  </div>
+
+                  <div>
+                    <FieldLabel htmlFor={`mob-image-${row.key}`}>
+                      {t.admin.imageForColor.replace("{color}", row.color || "—")}
+                    </FieldLabel>
+                    <input
+                      id={`mob-image-${row.key}`}
+                      type="file"
+                      accept="image/*"
+                      onChange={(e: ChangeEvent<HTMLInputElement>) =>
+                        updateVariant(row.key, {
+                          imageFile: e.target.files?.[0] ?? null,
+                        })
+                      }
+                      required
+                      className="input-field"
+                    />
+                  </div>
+
+                  <p className="text-xs text-brand-gray-500">
+                    {buildPhoneProductName(
+                      selectedBrand?.label ?? "",
+                      modelLabel,
+                      row.storage,
+                      row.color
+                    )}
+                  </p>
+                </div>
+              ))}
             </div>
 
             {error && <p className="text-sm text-red-600">{error}</p>}
@@ -418,6 +555,15 @@ export default function MobilesProductsPanel() {
             slug: c.slug,
             label: c.label,
           }))}
+          storageOptions={(catalog.storage ?? []).map((s) => s.label)}
+          colorOptions={(catalog.colors ?? []).map((c) => ({
+            label: c.label,
+            hex_color: c.hex_color,
+          }))}
+          extraColumns={[{ key: "color", label: t.admin.phoneColor }]}
+          renderExtraCells={(product) => (
+            <td className="px-3 py-3 text-brand-gray-600">{product.color ?? "—"}</td>
+          )}
         />
       </Panel>
     </div>

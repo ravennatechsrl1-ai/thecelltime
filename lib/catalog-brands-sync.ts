@@ -79,6 +79,58 @@ async function ensureDeviceBrandRow(
   if (error) throw error;
 }
 
+/** Insert a brand in catalog_phone_brands only (mobiles / phones shop). */
+export async function addPhoneCatalogBrand(
+  supabase: SupabaseClient,
+  input: { slug: string; label: string; sort_order?: number }
+): Promise<CatalogBrand> {
+  const slug = input.slug.trim() || slugify(input.label);
+  const label = input.label.trim();
+  const sort_order = input.sort_order ?? 999;
+
+  if (!slug || !label) {
+    throw new Error("Brand slug and label are required.");
+  }
+
+  return ensurePhoneBrandRow(supabase, { slug, label, sort_order });
+}
+
+/** Insert a brand in catalog_device_brands for one device type (protection / accessories). */
+export async function addDeviceCatalogBrand(
+  supabase: SupabaseClient,
+  input: {
+    device_type: string;
+    slug: string;
+    label: string;
+    sort_order?: number;
+  }
+): Promise<{ id: string; device_type: string; slug: string; label: string }> {
+  const slug = input.slug.trim() || slugify(input.label);
+  const label = input.label.trim();
+  const sort_order = input.sort_order ?? 999;
+
+  if (!slug || !label) {
+    throw new Error("Brand slug and label are required.");
+  }
+
+  await ensureDeviceBrandRow(supabase, {
+    device_type: input.device_type,
+    slug,
+    label,
+    sort_order,
+  });
+
+  const { data, error } = await supabase
+    .from("catalog_device_brands")
+    .select("id, device_type, slug, label")
+    .eq("device_type", input.device_type)
+    .eq("slug", slug)
+    .single();
+
+  if (error || !data) throw error ?? new Error("Brand not found after insert.");
+  return data as { id: string; device_type: string; slug: string; label: string };
+}
+
 /** Insert a brand in phones + all device-type catalogs (insert-only, no upsert). */
 export async function syncBrandGlobally(
   supabase: SupabaseClient,

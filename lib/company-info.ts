@@ -5,4 +5,5 @@ export const COMPANY_INFO = {
   vatId: "02735710390",
   tel: "0544216176",
   mobile: "3358372818",
+  email: "info.celltime@gmail.com",
 } as const;

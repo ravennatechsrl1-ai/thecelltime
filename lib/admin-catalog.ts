@@ -87,9 +87,12 @@ export function getPhoneBrandDbName(slug: PhoneBrandSlug): string {
 export function buildPhoneProductName(
   brandName: string,
   model: string,
-  storage: string
+  storage: string,
+  color?: string
 ): string {
-  const parts = [brandName.trim(), model.trim(), storage.trim()].filter(Boolean);
+  const parts = [brandName.trim(), model.trim(), storage.trim(), color?.trim()].filter(
+    Boolean
+  );
   return parts.join(" ");
 }
 

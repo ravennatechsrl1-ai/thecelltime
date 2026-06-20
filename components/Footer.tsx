@@ -82,6 +82,15 @@ export default function Footer() {
                   {COMPANY_INFO.mobile}
                 </a>
               </li>
+              <li>
+                {t.footer.email}:{" "}
+                <a
+                  href={`mailto:${COMPANY_INFO.email}`}
+                  className="transition-colors hover:text-brand-electric-light"
+                >
+                  {COMPANY_INFO.email}
+                </a>
+              </li>
             </ul>
           </div>
 

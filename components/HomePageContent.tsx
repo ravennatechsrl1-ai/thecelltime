@@ -8,14 +8,18 @@ import HomeMobilaxDualCatalog from "@/components/HomeMobilaxDualCatalog";
 import HomeProductSection from "@/components/HomeProductSection";
 import HomeBrandLogosSlider from "@/components/HomeBrandLogosSlider";
 import HomeTrustSection from "@/components/HomeTrustSection";
+import PromotionStripBanner from "@/components/PromotionStrip";
 import { useLanguage } from "@/components/LanguageProvider";
+import { PromotionStrip } from "@/lib/promotion-strip";
 import { isOnPromotion } from "@/lib/product-pricing";
 import { Product } from "@/types";
 
 export default function HomePageContent({
   initialProducts,
+  promotionStrip,
 }: {
   initialProducts: Product[];
+  promotionStrip: PromotionStrip;
 }) {
   const { t } = useLanguage();
 
@@ -56,6 +60,8 @@ export default function HomePageContent({
       />
 
       <HomeCategoryNav />
+
+      <PromotionStripBanner strip={promotionStrip} />
 
       <HomeProductSection
         title={t.home.promotions}

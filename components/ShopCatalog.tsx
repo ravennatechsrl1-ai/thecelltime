@@ -13,7 +13,11 @@ import {
   productMatchesAccessoryType,
 } from "@/lib/admin-catalog";
 import { useCatalogBrands } from "@/hooks/useCatalogBrands";
+import { usePhoneConditions } from "@/hooks/usePhoneConditions";
 import { useProducts } from "@/components/ProductsProvider";
+import { buildShopPhoneDisplays } from "@/lib/phone-listings";
+import { productMatchesPhoneShopGroup } from "@/lib/phone-conditions";
+import { PhoneConditionOption } from "@/lib/catalog-service";
 import { PHONE_BRANDS, productMatchesBrand, productMatchesShopBrand, shopAllBrandsPath, shopBrandCatalogPath } from "@/lib/phone-brands";
 import {
   getShopBrand,
@@ -37,7 +41,8 @@ const PER_PAGE = 50;
 function filterByView(
   products: Product[],
   view: ShopView,
-  brandLabels: Map<string, string>
+  brandLabels: Map<string, string>,
+  conditionIndex: Map<string, PhoneConditionOption>
 ): Product[] {
   switch (view.type) {
     case "promotions":
@@ -45,27 +50,23 @@ function filterByView(
     case "phones":
       return products.filter((product) => product.category === "phones");
     case "phones-new":
-      return products.filter(
-        (product) =>
-          product.category === "phones" && product.condition === "new"
+      return products.filter((product) =>
+        productMatchesPhoneShopGroup(product, "new", conditionIndex)
       );
     case "phones-used":
-      return products.filter(
-        (product) =>
-          product.category === "phones" && product.condition === "used"
+      return products.filter((product) =>
+        productMatchesPhoneShopGroup(product, "used", conditionIndex)
       );
     case "phones-new-brand":
       return products.filter(
         (product) =>
-          product.category === "phones" &&
-          product.condition === "new" &&
+          productMatchesPhoneShopGroup(product, "new", conditionIndex) &&
           productMatchesBrand(product.brand, view.brand)
       );
     case "phones-used-brand":
       return products.filter(
         (product) =>
-          product.category === "phones" &&
-          product.condition === "used" &&
+          productMatchesPhoneShopGroup(product, "used", conditionIndex) &&
           productMatchesBrand(product.brand, view.brand)
       );
     case "brand":
@@ -172,6 +173,7 @@ function ShopCatalogContent({
   const searchParams = useSearchParams();
   const { t } = useLanguage();
   const { brands: catalogBrands } = useCatalogBrands();
+  const { index: conditionIndex } = usePhoneConditions();
   const brandLabels = useMemo(
     () => new Map(catalogBrands.map((brand) => [brand.slug, brand.label])),
     [catalogBrands]
@@ -237,20 +239,25 @@ function ShopCatalogContent({
   const searchQuery = searchParams.get("search")?.trim().toLowerCase() ?? "";
 
   const filteredProducts = useMemo(() => {
-    let filtered = filterByView(products, view, brandLabels);
+    let filtered = filterByView(products, view, brandLabels, conditionIndex);
     if (searchQuery) {
       filtered = filtered.filter((product) =>
         `${product.name} ${product.brand}`.toLowerCase().includes(searchQuery)
       );
     }
     return sortProducts(filtered, sort);
-  }, [products, view, searchQuery, sort, brandLabels]);
+  }, [products, view, searchQuery, sort, brandLabels, conditionIndex]);
 
-  const totalPages = Math.max(1, Math.ceil(filteredProducts.length / PER_PAGE));
+  const shopDisplays = useMemo(
+    () => buildShopPhoneDisplays(filteredProducts),
+    [filteredProducts]
+  );
+
+  const totalPages = Math.max(1, Math.ceil(shopDisplays.length / PER_PAGE));
   const safePage = Math.min(page, totalPages);
   const pageStart = (safePage - 1) * PER_PAGE;
-  const pageEnd = Math.min(pageStart + PER_PAGE, filteredProducts.length);
-  const pageProducts = filteredProducts.slice(pageStart, pageEnd);
+  const pageEnd = Math.min(pageStart + PER_PAGE, shopDisplays.length);
+  const pageDisplays = shopDisplays.slice(pageStart, pageEnd);
 
   const pageTitle = getPageTitle(view, t, brandLabels);
   const toolbarLabel = activeBrand
@@ -556,9 +563,9 @@ function ShopCatalogContent({
         <div className="min-w-0 flex-1">
           <div className="mobilax-toolbar mb-4">
             <p className="text-xs font-semibold uppercase tracking-wide text-brand-gray-600">
-              {filteredProducts.length === 0
+              {shopDisplays.length === 0
                 ? `0 ${t.common.products}`
-                : `${pageStart + 1}-${pageEnd} / ${filteredProducts.length}`}
+                : `${pageStart + 1}-${pageEnd} / ${shopDisplays.length}`}
             </p>
             <div className="flex items-center gap-2">
               <span className="text-[10px] font-bold uppercase tracking-widest text-brand-gray-400">
@@ -581,12 +588,18 @@ function ShopCatalogContent({
           </div>
 
           <div className="grid grid-cols-2 gap-px bg-brand-gray-200 sm:grid-cols-3 lg:grid-cols-3 xl:grid-cols-4">
-            {pageProducts.map((product) => (
-              <MobilaxGridProductCard key={product.id} product={product} />
+            {pageDisplays.map(({ listingId, title, product, variants }) => (
+              <MobilaxGridProductCard
+                key={listingId}
+                product={product}
+                listingId={listingId}
+                title={title}
+                variantCount={variants.length}
+              />
             ))}
           </div>
 
-          {filteredProducts.length === 0 && (
+          {shopDisplays.length === 0 && (
             <div className="border border-brand-gray-200 bg-white py-20 text-center">
               <p className="text-sm text-brand-gray-500">{t.common.noneFound}</p>
             </div>

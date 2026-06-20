@@ -1,44 +1,35 @@
 "use client";
 
-import Link from "next/link";
 import { useMemo } from "react";
 import { PhoneBrandLogo } from "@/components/brand-logos/PhoneBrandLogos";
 import { useLanguage } from "@/components/LanguageProvider";
-import { useCatalogBrands } from "@/hooks/useCatalogBrands";
-import { PHONE_BRANDS, shopBrandCatalogPath } from "@/lib/phone-brands";
+import { PHONE_BRANDS } from "@/lib/phone-brands";
 
 function BrandLogoTile({ slug, label }: { slug: string; label: string }) {
   return (
-    <Link
-      href={shopBrandCatalogPath(slug)}
-      className="group flex h-[4.5rem] w-[9.5rem] shrink-0 items-center justify-center rounded-xl border border-brand-gray-200/80 bg-white px-5 shadow-sm transition-all duration-300 hover:-translate-y-0.5 hover:border-brand-electric/25 hover:shadow-card-hover sm:h-20 sm:w-[11rem]"
-      aria-label={label}
+    <div
+      className="flex h-[4.5rem] w-[9.5rem] shrink-0 items-center justify-center rounded-xl border border-brand-gray-200/80 bg-white px-5 shadow-sm sm:h-20 sm:w-[11rem]"
+      aria-hidden
     >
       <PhoneBrandLogo
         brand={slug}
         label={label}
-        className="h-8 w-auto max-w-[112px] object-contain opacity-90 transition-all duration-300 group-hover:scale-105 group-hover:opacity-100 sm:h-9 sm:max-w-[128px]"
+        className="h-8 w-auto max-w-[112px] object-contain opacity-90 sm:h-9 sm:max-w-[128px]"
       />
-    </Link>
+    </div>
   );
 }
 
 export default function HomeBrandLogosSlider() {
   const { t } = useLanguage();
-  const { brands: catalogBrands } = useCatalogBrands();
 
   const brands = useMemo(
     () =>
-      catalogBrands.length > 0
-        ? catalogBrands.map((brand) => ({
-            slug: brand.slug,
-            label: brand.label,
-          }))
-        : PHONE_BRANDS.map((brand) => ({
-            slug: brand.slug,
-            label: t.nav[brand.labelKey],
-          })),
-    [catalogBrands, t]
+      PHONE_BRANDS.map((brand) => ({
+        slug: brand.slug,
+        label: t.nav[brand.labelKey],
+      })),
+    [t]
   );
 
   const track = [...brands, ...brands];
@@ -61,7 +52,7 @@ export default function HomeBrandLogosSlider() {
       </div>
 
       <div className="relative overflow-hidden motion-reduce:hidden">
-        <div className="flex w-max animate-marquee gap-4 px-4 hover:[animation-play-state:paused] sm:gap-5">
+        <div className="flex w-max animate-marquee gap-4 px-4 sm:gap-5">
           {track.map((brand, index) => (
             <BrandLogoTile
               key={`${brand.slug}-${index}`}

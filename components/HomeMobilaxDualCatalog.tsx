@@ -4,23 +4,33 @@ import Link from "next/link";
 import MobilaxCatalogToolbar from "@/components/MobilaxCatalogToolbar";
 import MobilaxGridProductCard from "@/components/MobilaxGridProductCard";
 import { useLanguage } from "@/components/LanguageProvider";
+import { buildShopPhoneDisplays } from "@/lib/phone-listings";
 import { Product } from "@/types";
 
 interface MobilaxCatalogPanelProps {
   title: string;
   products: Product[];
   seeMoreHref: string;
+  groupPhoneColors?: boolean;
 }
 
 function MobilaxCatalogPanel({
   title,
   products,
   seeMoreHref,
+  groupPhoneColors = false,
 }: MobilaxCatalogPanelProps) {
   const { t } = useLanguage();
-  const displayProducts = products.slice(0, 9);
+  const displays = groupPhoneColors
+    ? buildShopPhoneDisplays(products).slice(0, 9)
+    : products.slice(0, 9).map((product) => ({
+        listingId: product.id,
+        title: product.name,
+        product,
+        variants: [] as Product[],
+      }));
 
-  if (displayProducts.length === 0) return null;
+  if (displays.length === 0) return null;
 
   return (
     <div className="overflow-hidden border border-brand-gray-200 bg-white">
@@ -32,8 +42,14 @@ function MobilaxCatalogPanel({
       </div>
 
       <div className="mt-3 grid grid-cols-3 gap-px bg-brand-gray-200">
-        {displayProducts.map((product) => (
-          <MobilaxGridProductCard key={product.id} product={product} />
+        {displays.map(({ listingId, title, product, variants }) => (
+          <MobilaxGridProductCard
+            key={listingId}
+            product={product}
+            listingId={listingId}
+            title={title}
+            variantCount={variants.length}
+          />
         ))}
       </div>
 
@@ -68,6 +84,7 @@ export default function HomeMobilaxDualCatalog({
             title={t.home.phonesSection}
             products={phones}
             seeMoreHref="/shop/phones/new"
+            groupPhoneColors
           />
           <MobilaxCatalogPanel
             title={t.home.accessoriesSection}
