@@ -1,4 +1,3 @@
-import { createHmac, timingSafeEqual } from "crypto";
 import { cookies } from "next/headers";
 import type { NextRequest } from "next/server";
 
@@ -9,16 +8,46 @@ function getAdminSecret(): string | null {
   return process.env.ADMIN_PASSWORD?.trim() || null;
 }
 
-export function createAdminSessionToken(): string | null {
+async function hmacSha256Hex(secret: string, message: string): Promise<string> {
+  const encoder = new TextEncoder();
+  const key = await crypto.subtle.importKey(
+    "raw",
+    encoder.encode(secret),
+    { name: "HMAC", hash: "SHA-256" },
+    false,
+    ["sign"]
+  );
+  const signature = await crypto.subtle.sign(
+    "HMAC",
+    key,
+    encoder.encode(message)
+  );
+  return Array.from(new Uint8Array(signature))
+    .map((byte) => byte.toString(16).padStart(2, "0"))
+    .join("");
+}
+
+function timingSafeEqualString(a: string, b: string): boolean {
+  if (a.length !== b.length) return false;
+  let diff = 0;
+  for (let i = 0; i < a.length; i++) {
+    diff |= a.charCodeAt(i) ^ b.charCodeAt(i);
+  }
+  return diff === 0;
+}
+
+export async function createAdminSessionToken(): Promise<string | null> {
   const secret = getAdminSecret();
   if (!secret) return null;
 
   const issuedAt = String(Date.now());
-  const signature = createHmac("sha256", secret).update(issuedAt).digest("hex");
+  const signature = await hmacSha256Hex(secret, issuedAt);
   return `${issuedAt}.${signature}`;
 }
 
-export function verifyAdminSessionToken(token: string | undefined): boolean {
+export async function verifyAdminSessionToken(
+  token: string | undefined
+): Promise<boolean> {
   if (!token) return false;
 
   const secret = getAdminSecret();
@@ -32,21 +61,17 @@ export function verifyAdminSessionToken(token: string | undefined): boolean {
     return false;
   }
 
-  const expected = createHmac("sha256", secret).update(issuedAt).digest("hex");
-  if (signature.length !== expected.length) return false;
-
-  try {
-    return timingSafeEqual(Buffer.from(signature), Buffer.from(expected));
-  } catch {
-    return false;
-  }
+  const expected = await hmacSha256Hex(secret, issuedAt);
+  return timingSafeEqualString(signature, expected);
 }
 
 export function getAdminSessionFromRequest(request: NextRequest): string | undefined {
   return request.cookies.get(ADMIN_SESSION_COOKIE)?.value;
 }
 
-export function isAdminRequestAuthorized(request: NextRequest): boolean {
+export async function isAdminRequestAuthorized(
+  request: NextRequest
+): Promise<boolean> {
   return verifyAdminSessionToken(getAdminSessionFromRequest(request));
 }
 

@@ -25,7 +25,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const token = createAdminSessionToken();
+    const token = await createAdminSessionToken();
     if (!token) {
       return NextResponse.json(
         { authenticated: false, error: "Sessione admin non disponibile." },

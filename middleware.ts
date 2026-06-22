@@ -7,7 +7,7 @@ export async function middleware(request: NextRequest) {
 
   if (pathname.startsWith("/api/admin")) {
     const publicAdminPaths = new Set(["/api/admin/auth", "/api/admin/session"]);
-    if (!publicAdminPaths.has(pathname) && !isAdminRequestAuthorized(request)) {
+    if (!publicAdminPaths.has(pathname) && !(await isAdminRequestAuthorized(request))) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
   }
