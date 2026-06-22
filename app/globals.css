@@ -102,4 +102,12 @@
   .btn-hero-secondary {
     @apply inline-flex min-h-[48px] items-center justify-center border-2 border-white/40 bg-white/10 px-8 py-3 text-sm font-bold uppercase tracking-wide text-white backdrop-blur-sm transition-all duration-200 hover:border-brand-electric-light hover:bg-white/15 active:scale-[0.98];
   }
+
+  .checkout-label {
+    @apply mb-1.5 block text-xs font-semibold text-brand-gray-600;
+  }
+
+  .checkout-input {
+    @apply w-full rounded-md border border-brand-gray-300 bg-white px-3 py-2.5 text-sm text-brand-navy outline-none transition-colors focus:border-brand-electric focus:ring-1 focus:ring-brand-electric;
+  }
 }

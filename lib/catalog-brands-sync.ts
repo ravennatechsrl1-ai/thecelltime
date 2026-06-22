@@ -162,6 +162,45 @@ export async function syncBrandGlobally(
   return phoneBrand;
 }
 
+/** Remove device-catalog rows for a brand slug (all device types). */
+export async function removeDeviceBrandsBySlug(
+  supabase: SupabaseClient,
+  slug: string
+): Promise<void> {
+  const normalized = slug.trim();
+  if (!normalized) return;
+
+  const { error } = await supabase
+    .from("catalog_device_brands")
+    .delete()
+    .eq("slug", normalized);
+
+  if (error) throw error;
+}
+
+/** Remove a brand slug from phones and all device-type catalogs. */
+export async function removeBrandGloballyBySlug(
+  supabase: SupabaseClient,
+  slug: string
+): Promise<void> {
+  const normalized = slug.trim();
+  if (!normalized) return;
+
+  const { error: deviceError } = await supabase
+    .from("catalog_device_brands")
+    .delete()
+    .eq("slug", normalized);
+
+  if (deviceError) throw deviceError;
+
+  const { error: phoneError } = await supabase
+    .from("catalog_phone_brands")
+    .delete()
+    .eq("slug", normalized);
+
+  if (phoneError) throw phoneError;
+}
+
 /** Ensure every brand exists in phones + all device catalogs. */
 export async function ensureBrandsSynced(
   supabase: SupabaseClient

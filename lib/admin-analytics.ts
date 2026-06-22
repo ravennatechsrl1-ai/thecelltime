@@ -1,6 +1,7 @@
-import { AdminDashboardStats, Product, ShopOrder } from "@/types";
+import { AdminDashboardStats, Product, ShopOrder, ShippingAddress } from "@/types";
 import { mapProductRow } from "@/lib/map-product";
 import { isOnPromotion } from "@/lib/product-pricing";
+import { PENDING_FULFILLMENT_STATUSES, REVENUE_ORDER_STATUSES } from "@/lib/order-status";
 import { getSupabaseClientSafe } from "@/utils/supabase";
 
 const LOW_STOCK_THRESHOLD = 5;
@@ -10,6 +11,12 @@ function mapProduct(row: Record<string, unknown>): Product {
 }
 
 function mapOrder(row: Record<string, unknown>): ShopOrder {
+  const shippingRaw = row.shipping_address;
+  let shipping_address: ShippingAddress | null = null;
+  if (shippingRaw && typeof shippingRaw === "object" && !Array.isArray(shippingRaw)) {
+    shipping_address = shippingRaw as ShippingAddress;
+  }
+
   return {
     id: row.id as string,
     order_number: row.order_number as string,
@@ -19,6 +26,11 @@ function mapOrder(row: Record<string, unknown>): ShopOrder {
     total_amount: Number(row.total_amount),
     status: row.status as ShopOrder["status"],
     stripe_session_id: (row.stripe_session_id as string | null) ?? null,
+    stripe_payment_intent_id:
+      (row.stripe_payment_intent_id as string | null) ?? null,
+    shipping_address,
+    delivered_at: (row.delivered_at as string | null) ?? null,
+    updated_at: (row.updated_at as string | null) ?? null,
     created_at: row.created_at as string,
   };
 }
@@ -57,6 +69,7 @@ export async function fetchAdminDashboardStats(): Promise<AdminDashboardStats> {
     revenueToday: 0,
     ordersToday: 0,
     averageOrderValue: 0,
+    pendingFulfillmentCount: 0,
     salesByDay: last7Days().map((date) => ({
       date,
       label: dayLabel(date),
@@ -84,7 +97,10 @@ export async function fetchAdminDashboardStats(): Promise<AdminDashboardStats> {
     recentOrdersRes,
   ] = await Promise.all([
     supabase.from("products").select("*"),
-    supabase.from("shop_orders").select("*").eq("status", "paid"),
+    supabase
+      .from("shop_orders")
+      .select("*")
+      .in("status", REVENUE_ORDER_STATUSES),
     supabase.from("shop_order_items").select("*"),
     supabase.from("repair_tickets").select("status"),
     supabase.from("shop_users").select("email"),
@@ -155,10 +171,15 @@ export async function fetchAdminDashboardStats(): Promise<AdminDashboardStats> {
     (ticket) => ticket.status !== "Pronto al Ritiro"
   ).length;
 
+  const pendingFulfillmentCount = paidOrders.filter((order) =>
+    PENDING_FULFILLMENT_STATUSES.includes(order.status)
+  ).length;
+
   return {
     totalRevenue,
     totalOrders: paidOrders.length,
     paidOrders: paidOrders.length,
+    pendingFulfillmentCount,
     totalProducts: products.length,
     totalStockUnits,
     lowStockCount: lowStockProducts.length,
@@ -194,21 +215,32 @@ export async function fetchAllProducts(): Promise<Product[]> {
 
   const { data, error } = await supabase
     .from("products")
-    .select("*, phone_listings(base_name)")
+    .select("*, phone_listings(base_name, base_name_i18n)")
     .order("created_at", { ascending: false });
 
   if (error || !data) return [];
   return data.map(mapProduct);
 }
 
-export async function fetchAllOrders(): Promise<ShopOrder[]> {
+export async function fetchAllOrders(options?: {
+  search?: string;
+}): Promise<ShopOrder[]> {
   const supabase = getSupabaseClientSafe();
   if (!supabase) return [];
 
-  const { data: orders, error } = await supabase
-    .from("shop_orders")
-    .select("*")
-    .order("created_at", { ascending: false });
+  let query = supabase.from("shop_orders").select("*").order("created_at", {
+    ascending: false,
+  });
+
+  const search = options?.search?.trim();
+  if (search) {
+    const term = `%${search}%`;
+    query = query.or(
+      `order_number.ilike.${term},customer_email.ilike.${term},customer_name.ilike.${term}`
+    );
+  }
+
+  const { data: orders, error } = await query;
 
   if (error || !orders) return [];
 
@@ -232,6 +264,54 @@ export async function fetchAllOrders(): Promise<ShopOrder[]> {
     ...mapOrder(row),
     items: itemsByOrder.get(row.id as string) ?? [],
   }));
+}
+
+export async function updateOrderStatus(
+  orderId: string,
+  status: ShopOrder["status"]
+): Promise<ShopOrder | null> {
+  const supabase = getSupabaseClientSafe();
+  if (!supabase) return null;
+
+  const patch: Record<string, unknown> = {
+    status,
+    updated_at: new Date().toISOString(),
+  };
+
+  if (status === "delivered") {
+    patch.delivered_at = new Date().toISOString();
+  }
+
+  const { data, error } = await supabase
+    .from("shop_orders")
+    .update(patch)
+    .eq("id", orderId)
+    .select("*")
+    .single();
+
+  if (error || !data) {
+    console.error("[admin/orders] update", error);
+    return null;
+  }
+
+  const order = mapOrder(data);
+
+  const { data: items } = await supabase
+    .from("shop_order_items")
+    .select("*")
+    .eq("order_id", orderId);
+
+  return {
+    ...order,
+    items: (items ?? []).map((item) => ({
+      id: item.id as string,
+      order_id: item.order_id as string,
+      product_id: (item.product_id as string | null) ?? null,
+      product_name: item.product_name as string,
+      quantity: Number(item.quantity),
+      unit_price: Number(item.unit_price),
+    })),
+  };
 }
 
 export async function fetchAdminCustomers() {

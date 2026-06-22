@@ -2,14 +2,20 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import SafeImage from "@/components/SafeImage";
 import ProductPriceDisplay, { PromotionBadge } from "@/components/ProductPriceDisplay";
+import { IconUser } from "@/components/icons/NavIcons";
 import { useAuth } from "@/components/AuthProvider";
 import { useCart } from "@/components/CartProvider";
 import { useLanguage } from "@/components/LanguageProvider";
 import { usePhoneConditions } from "@/hooks/usePhoneConditions";
-import { getCheckoutCustomer, redirectToCheckout } from "@/lib/client-checkout";
+import { getCheckoutCustomer, goToInstantCheckout } from "@/lib/client-checkout";
 import { getPhoneConditionBadge } from "@/lib/phone-conditions";
+import {
+  getProductBrandLabel,
+  getProductDisplayName,
+} from "@/lib/product-display-name";
 import { productDetailPath } from "@/lib/product-path";
 import { getEffectivePrice } from "@/lib/product-pricing";
 import { Product } from "@/types";
@@ -27,14 +33,16 @@ export default function MobilaxGridProductCard({
   title,
   variantCount = 0,
 }: MobilaxGridProductCardProps) {
-  const { t, formatPrice } = useLanguage();
+  const { t, formatPrice, locale } = useLanguage();
+  const router = useRouter();
   const { user } = useAuth();
   const { addItem } = useCart();
   const { index: conditionIndex } = usePhoneConditions();
   const [buying, setBuying] = useState(false);
 
   const isPhone = product.category === "phones";
-  const displayName = title ?? product.name;
+  const displayName = getProductDisplayName(product, locale, title);
+  const brandLabel = getProductBrandLabel(product);
   const detailHref = productDetailPath(product, listingId);
   const outOfStock = product.stock <= 0;
   const salePrice = getEffectivePrice(product);
@@ -42,8 +50,12 @@ export default function MobilaxGridProductCard({
   const showFromPrice = isPhone && variantCount > 1;
 
   function stopNav(e: React.MouseEvent) {
-    e.preventDefault();
     e.stopPropagation();
+  }
+
+  function handleSignIn(e: React.MouseEvent) {
+    stopNav(e);
+    router.push("/login");
   }
 
   function handleAddToCart(e: React.MouseEvent) {
@@ -57,12 +69,12 @@ export default function MobilaxGridProductCard({
     if (outOfStock || buying) return;
     setBuying(true);
     try {
-      await redirectToCheckout(
+      goToInstantCheckout(
         {
           lineItems: [
             {
               productId: product.id,
-              name: product.name,
+              name: getProductDisplayName(product, locale),
               price: salePrice,
               quantity: 1,
               imageUrl: product.image_url,
@@ -70,8 +82,7 @@ export default function MobilaxGridProductCard({
           ],
           totalAmount: salePrice,
           customer: getCheckoutCustomer(user),
-        },
-        t.cart.checkoutError
+        }
       );
     } catch {
       // checkout errors are surfaced by redirectToCheckout throw; keep card clean
@@ -80,8 +91,8 @@ export default function MobilaxGridProductCard({
     }
   }
 
-  const actionButtons = !outOfStock ? (
-    <div className="mt-auto space-y-1.5 pt-2">
+  const actionButtons = outOfStock ? null : user ? (
+    <div className="relative z-10 mt-auto space-y-1.5 pt-2">
       <button
         type="button"
         onClick={handleAddToCart}
@@ -98,7 +109,16 @@ export default function MobilaxGridProductCard({
         {buying ? t.cart.redirecting : t.shop.buyNow}
       </button>
     </div>
-  ) : null;
+  ) : (
+    <button
+      type="button"
+      onClick={handleSignIn}
+      className="relative z-10 mt-auto flex min-h-[36px] items-center justify-center gap-1.5 border border-brand-gray-300 bg-white px-2 py-2 pt-2 text-[10px] font-bold uppercase tracking-wide text-brand-navy transition-all duration-200 hover:border-brand-electric hover:text-brand-electric"
+    >
+      <IconUser className="h-3.5 w-3.5" />
+      {t.nav.signIn}
+    </button>
+  );
 
   const cardBody = (
     <>
@@ -110,8 +130,10 @@ export default function MobilaxGridProductCard({
           className="object-contain p-2"
           sizes="(max-width: 768px) 33vw, 180px"
         />
-        <span className="absolute left-2 top-2 max-w-[70%] truncate bg-white/90 px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wide text-brand-gray-600">
-          {product.brand}
+        <span
+          className="absolute left-2 top-2 max-w-[70%] truncate bg-white/90 px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wide text-brand-gray-600"
+        >
+          {brandLabel}
         </span>
         {conditionBadge && (
           <span
@@ -128,7 +150,9 @@ export default function MobilaxGridProductCard({
       </div>
 
       <div className="flex flex-1 flex-col border-t border-brand-gray-100 p-2.5">
-        <h3 className="line-clamp-3 min-h-[2.75rem] text-[10px] leading-snug text-brand-gray-700 transition-colors group-hover:text-brand-electric sm:text-[11px]">
+        <h3
+          className="line-clamp-3 min-h-[2.75rem] text-[10px] leading-snug text-brand-gray-700 transition-colors group-hover:text-brand-electric sm:text-[11px]"
+        >
           {displayName}
         </h3>
 
@@ -175,11 +199,13 @@ export default function MobilaxGridProductCard({
   );
 
   return (
-    <Link
-      href={detailHref}
-      className="group flex h-full flex-col bg-white transition-shadow duration-200 hover:shadow-md"
-    >
+    <article className="group relative flex h-full flex-col bg-white transition-shadow duration-200 hover:shadow-md">
+      <Link
+        href={detailHref}
+        className="absolute inset-0 z-0"
+        aria-label={displayName}
+      />
       {cardBody}
-    </Link>
+    </article>
   );
 }

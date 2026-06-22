@@ -57,13 +57,13 @@ export default function PhoneVariantSelectors({
         {storage && (
           <p>
             <span className="font-semibold text-brand-navy">{t.shop.storageLabel}:</span>{" "}
-            {storage}
+            <span translate="no">{storage}</span>
           </p>
         )}
         {color && (
           <p>
             <span className="font-semibold text-brand-navy">{t.shop.colorsLabel}:</span>{" "}
-            {color}
+            <span translate="no">{color}</span>
           </p>
         )}
       </div>
@@ -90,6 +90,7 @@ export default function PhoneVariantSelectors({
                   type="button"
                   aria-pressed={isActive}
                   onClick={() => handleStorageSelect(storage)}
+                  translate="no"
                   className={`min-h-[40px] border-2 px-4 py-2 text-sm font-semibold transition-all duration-200 ${
                     isActive
                       ? "border-brand-electric bg-brand-electric/5 text-brand-navy"

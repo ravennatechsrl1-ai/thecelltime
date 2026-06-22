@@ -1,6 +1,7 @@
 "use client";
 
 import { ChangeEvent, FormEvent, useMemo, useState } from "react";
+import AdminModal from "@/components/admin/AdminModal";
 import SafeImage from "@/components/SafeImage";
 import { useLanguage } from "@/components/LanguageProvider";
 import { Product, ProductCondition } from "@/types";
@@ -62,6 +63,7 @@ export default function AdminProductInventory({
 
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
   const [editName, setEditName] = useState("");
+  const [editNameEn, setEditNameEn] = useState("");
   const [editBrand, setEditBrand] = useState("");
   const [editCondition, setEditCondition] = useState<ProductCondition>("new");
   const [editPrice, setEditPrice] = useState("");
@@ -130,6 +132,7 @@ export default function AdminProductInventory({
   function openEdit(product: Product) {
     setEditingProduct(product);
     setEditName(product.name);
+    setEditNameEn(product.name_i18n?.en ?? product.name);
     setEditBrand(product.brand);
     setEditCondition(product.condition ?? "new");
     setEditPrice(String(product.price));
@@ -164,6 +167,7 @@ export default function AdminProductInventory({
 
     const formData = new FormData();
     formData.append("name", editName.trim());
+    formData.append("name_en", editNameEn.trim());
     formData.append("brand", editBrand.trim());
     formData.append("price", editPrice);
     formData.append("stock", editStock);
@@ -390,23 +394,15 @@ export default function AdminProductInventory({
         </div>
       )}
 
-      {editingProduct && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-          <div
-            role="dialog"
-            aria-modal="true"
-            aria-labelledby="edit-product-title"
-            className="max-h-[90vh] w-full max-w-lg overflow-y-auto rounded-xl bg-white p-6 shadow-xl"
-          >
-            <h3
-              id="edit-product-title"
-              className="text-lg font-bold text-brand-navy"
-            >
-              {t.admin.editProductTitle}
-            </h3>
-            <form onSubmit={handleSaveEdit} className="mt-4 space-y-4">
+      <AdminModal
+        open={Boolean(editingProduct)}
+        onClose={closeEdit}
+        title={t.admin.editProductTitle}
+        titleId="edit-product-title"
+      >
+        <form onSubmit={handleSaveEdit} className="space-y-4">
               <div>
-                <FieldLabel htmlFor="edit-name">{t.admin.productName}</FieldLabel>
+                <FieldLabel htmlFor="edit-name">{t.admin.productNameIt}</FieldLabel>
                 <input
                   id="edit-name"
                   type="text"
@@ -414,6 +410,17 @@ export default function AdminProductInventory({
                   onChange={(e) => setEditName(e.target.value)}
                   className="input-field"
                   required
+                />
+              </div>
+              <div>
+                <FieldLabel htmlFor="edit-name-en">{t.admin.productNameEn}</FieldLabel>
+                <input
+                  id="edit-name-en"
+                  type="text"
+                  value={editNameEn}
+                  onChange={(e) => setEditNameEn(e.target.value)}
+                  placeholder={t.admin.productNameEnPlaceholder}
+                  className="input-field"
                 />
               </div>
               <div>
@@ -524,14 +531,14 @@ export default function AdminProductInventory({
                 <button
                   type="submit"
                   disabled={editSaving}
-                  className="btn-primary disabled:opacity-50"
+                  className="btn-primary w-auto disabled:opacity-50"
                 >
                   {editSaving ? t.admin.saving : t.admin.saveChanges}
                 </button>
                 <button
                   type="button"
-                  onClick={() => handleDelete(editingProduct)}
-                  disabled={deletingId === editingProduct.id}
+                  onClick={() => editingProduct && handleDelete(editingProduct)}
+                  disabled={!editingProduct || deletingId === editingProduct.id}
                   className="rounded border border-red-200 px-4 py-2 text-xs font-bold uppercase tracking-wide text-red-600"
                 >
                   {t.admin.deleteProduct}
@@ -545,9 +552,7 @@ export default function AdminProductInventory({
                 </button>
               </div>
             </form>
-          </div>
-        </div>
-      )}
+      </AdminModal>
     </>
   );
 }

@@ -95,6 +95,7 @@ export default function DeviceHierarchyProductsPanel({
   const [modelId, setModelId] = useState("");
   const [subtype, setSubtype] = useState(subtypeOptions[0]?.value ?? "");
   const [customName, setCustomName] = useState("");
+  const [nameEn, setNameEn] = useState("");
   const [price, setPrice] = useState("");
   const [stock, setStock] = useState("");
   const [imageFile, setImageFile] = useState<File | null>(null);
@@ -200,6 +201,9 @@ export default function DeviceHierarchyProductsPanel({
 
     const formData = new FormData();
     formData.append("name", previewName);
+    if (nameEn.trim()) {
+      formData.append("name_en", nameEn.trim());
+    }
     formData.append("brand", selectedBrand.label);
     formData.append("category", category);
     formData.append("price", price);
@@ -222,6 +226,7 @@ export default function DeviceHierarchyProductsPanel({
       setPrice("");
       setStock("");
       setCustomName("");
+      setNameEn("");
       setImageFile(null);
       await loadProducts();
     } catch (err) {
@@ -382,8 +387,22 @@ export default function DeviceHierarchyProductsPanel({
                 className="input-field"
               />
               <p className="mt-1 text-xs text-brand-gray-500">
-                {t.admin.productName}: <strong>{previewName || "—"}</strong>
+                {t.admin.productNameIt}: <strong>{previewName || "—"}</strong>
               </p>
+            </div>
+
+            <div>
+              <FieldLabel htmlFor={`${prefix}-name-en`}>
+                {t.admin.productNameEn}
+              </FieldLabel>
+              <input
+                id={`${prefix}-name-en`}
+                type="text"
+                value={nameEn}
+                onChange={(e) => setNameEn(e.target.value)}
+                placeholder={t.admin.productNameEnPlaceholder}
+                className="input-field"
+              />
             </div>
 
             <div>

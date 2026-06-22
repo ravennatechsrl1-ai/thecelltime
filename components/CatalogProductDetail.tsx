@@ -9,8 +9,12 @@ import { useAuth } from "@/components/AuthProvider";
 import { useCart } from "@/components/CartProvider";
 import { useLanguage } from "@/components/LanguageProvider";
 import { usePhoneConditions } from "@/hooks/usePhoneConditions";
-import { getCheckoutCustomer, redirectToCheckout } from "@/lib/client-checkout";
+import { getCheckoutCustomer, goToInstantCheckout } from "@/lib/client-checkout";
 import { getPhoneConditionBadge } from "@/lib/phone-conditions";
+import {
+  getProductBrandLabel,
+  getProductDisplayName,
+} from "@/lib/product-display-name";
 import { productBrowseHref } from "@/lib/product-path";
 import { getEffectivePrice } from "@/lib/product-pricing";
 import { Product } from "@/types";
@@ -32,7 +36,7 @@ function browseLabel(
 }
 
 export default function CatalogProductDetail({ product }: { product: Product }) {
-  const { t } = useLanguage();
+  const { t, locale } = useLanguage();
   const { user } = useAuth();
   const { addItem } = useCart();
   const { index: conditionIndex } = usePhoneConditions();
@@ -59,22 +63,19 @@ export default function CatalogProductDetail({ product }: { product: Product }) 
     setBuying(true);
     setError(null);
     try {
-      await redirectToCheckout(
-        {
-          lineItems: [
-            {
-              productId: product.id,
-              name: product.name,
-              price: salePrice,
-              quantity: 1,
-              imageUrl: product.image_url,
-            },
-          ],
-          totalAmount: salePrice,
-          customer: getCheckoutCustomer(user),
-        },
-        t.cart.checkoutError
-      );
+      goToInstantCheckout({
+        lineItems: [
+          {
+            productId: product.id,
+            name: getProductDisplayName(product, locale),
+            price: salePrice,
+            quantity: 1,
+            imageUrl: product.image_url,
+          },
+        ],
+        totalAmount: salePrice,
+        customer: getCheckoutCustomer(user),
+      });
     } catch (err) {
       setError(err instanceof Error ? err.message : t.cart.checkoutError);
     } finally {
@@ -98,7 +99,9 @@ export default function CatalogProductDetail({ product }: { product: Product }) 
             </Link>
           </li>
           <li aria-hidden="true">/</li>
-          <li className="font-semibold text-brand-navy">{product.brand}</li>
+          <li className="font-semibold text-brand-navy">
+            {getProductBrandLabel(product)}
+          </li>
         </ol>
       </nav>
 
@@ -106,7 +109,7 @@ export default function CatalogProductDetail({ product }: { product: Product }) 
         <div className="relative aspect-square max-h-[520px] w-full bg-[#fafafa] p-6 sm:p-10">
           <SafeImage
             src={product.image_url}
-            alt={product.name}
+            alt={getProductDisplayName(product, locale)}
             fill
             className="object-contain p-4"
             sizes="(max-width: 1024px) 100vw, 520px"
@@ -128,10 +131,10 @@ export default function CatalogProductDetail({ product }: { product: Product }) 
 
         <div className="flex flex-col">
           <p className="text-xs font-bold uppercase tracking-widest text-brand-gray-400">
-            {product.brand}
+            {getProductBrandLabel(product)}
           </p>
           <h1 className="mt-2 text-xl font-bold uppercase tracking-tight text-brand-navy sm:text-2xl">
-            {product.name}
+            {getProductDisplayName(product, locale)}
           </h1>
 
           <div className="mt-4">

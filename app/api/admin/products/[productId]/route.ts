@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { revalidateTag } from "next/cache";
 import { mapProductRow } from "@/lib/map-product";
+import { readNameI18nFromFormData } from "@/lib/product-i18n";
 import { getSupabaseClient } from "@/utils/supabase";
 import { ProductCondition } from "@/types";
 
@@ -23,14 +24,22 @@ export async function PATCH(
     const { productId } = await params;
     const formData = await request.formData();
 
-    const name = formData.get("name")?.toString().trim();
+    const nameI18n = readNameI18nFromFormData(formData);
+    if (!nameI18n?.it) {
+      return NextResponse.json(
+        { error: "Campi obbligatori mancanti." },
+        { status: 400 }
+      );
+    }
+
+    const name = nameI18n.it;
     const brand = formData.get("brand")?.toString().trim();
     const priceRaw = formData.get("price")?.toString();
     const stockRaw = formData.get("stock")?.toString();
     const conditionRaw = formData.get("condition")?.toString();
     const imageFile = formData.get("image");
 
-    if (!name || !brand || !priceRaw || !stockRaw) {
+    if (!brand || !priceRaw || !stockRaw) {
       return NextResponse.json(
         { error: "Campi obbligatori mancanti." },
         { status: 400 }
@@ -69,6 +78,7 @@ export async function PATCH(
 
     const updates: Record<string, unknown> = {
       name,
+      name_i18n: nameI18n,
       brand,
       price,
       stock,

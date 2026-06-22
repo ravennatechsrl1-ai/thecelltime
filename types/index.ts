@@ -2,9 +2,12 @@ export type ProductCategory = "phones" | "accessories" | "other" | "protection";
 
 export type ProductCondition = string | null;
 
+export type ProductNameI18n = Partial<Record<"it" | "en", string>>;
+
 export interface Product {
   id: string;
   name: string;
+  name_i18n?: ProductNameI18n | null;
   price: number;
   category: ProductCategory;
   condition: ProductCondition;
@@ -31,6 +34,7 @@ export interface Product {
   phone_listing_id?: string | null;
   /** Denormalized listing title without storage/color */
   phone_listing_base_name?: string | null;
+  phone_listing_base_name_i18n?: ProductNameI18n | null;
 }
 
 export type RepairTicketStatus =
@@ -73,6 +77,25 @@ export interface CheckoutCustomerData {
   name: string;
   email: string;
   phone?: string;
+}
+
+export interface ShippingAddress {
+  country: string;
+  firstName: string;
+  lastName: string;
+  addressLine1: string;
+  addressLine2?: string;
+  city: string;
+  postalCode: string;
+  phone: string;
+}
+
+export interface CheckoutPrepareBody {
+  paymentIntentId: string;
+  lineItems: CheckoutLineItem[];
+  totalAmount: number;
+  customer: CheckoutCustomerData;
+  shippingAddress: ShippingAddress;
 }
 
 export interface CheckoutLineItem {
@@ -155,7 +178,14 @@ export interface AdminTicketUpdatePayload {
   status: RepairTicketStatus;
 }
 
-export type OrderStatus = "pending" | "paid" | "cancelled" | "refunded";
+export type OrderStatus =
+  | "pending"
+  | "paid"
+  | "processing"
+  | "shipped"
+  | "delivered"
+  | "cancelled"
+  | "refunded";
 
 export interface ShopOrder {
   id: string;
@@ -166,8 +196,16 @@ export interface ShopOrder {
   total_amount: number;
   status: OrderStatus;
   stripe_session_id: string | null;
+  stripe_payment_intent_id?: string | null;
+  shipping_address?: ShippingAddress | null;
+  delivered_at?: string | null;
+  updated_at?: string | null;
   created_at: string;
   items?: OrderItem[];
+}
+
+export interface AdminOrderUpdatePayload {
+  status: OrderStatus;
 }
 
 export interface OrderItem {
@@ -205,6 +243,7 @@ export interface AdminDashboardStats {
   totalRevenue: number;
   totalOrders: number;
   paidOrders: number;
+  pendingFulfillmentCount: number;
   totalProducts: number;
   totalStockUnits: number;
   lowStockCount: number;

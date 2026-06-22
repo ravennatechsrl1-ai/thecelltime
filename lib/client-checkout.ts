@@ -1,4 +1,5 @@
 import { User } from "@supabase/supabase-js";
+import { saveInstantCheckout } from "@/lib/instant-checkout";
 import { CheckoutCustomerData, CheckoutRequestBody } from "@/types";
 
 export function getCheckoutCustomer(user: User | null): CheckoutCustomerData {
@@ -12,24 +13,17 @@ export function getCheckoutCustomer(user: User | null): CheckoutCustomerData {
     return { name, email: user.email };
   }
 
-  return { name: "Cliente", email: "cliente@example.com" };
+  return { name: "", email: "" };
 }
 
-export async function redirectToCheckout(
-  body: CheckoutRequestBody,
-  checkoutErrorMessage = "Checkout error"
-): Promise<void> {
-  const response = await fetch("/api/checkout", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(body),
-  });
-
-  const data: { url?: string; error?: string } = await response.json();
-
-  if (!response.ok || !data.url) {
-    throw new Error(data.error ?? checkoutErrorMessage);
+export function goToCheckoutPage(): void {
+  if (typeof window !== "undefined") {
+    window.location.assign("/checkout");
+    return;
   }
+}
 
-  window.location.href = data.url;
+export function goToInstantCheckout(body: CheckoutRequestBody): void {
+  saveInstantCheckout(body);
+  window.location.href = "/checkout";
 }

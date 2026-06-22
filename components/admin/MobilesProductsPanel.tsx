@@ -85,6 +85,7 @@ export default function MobilesProductsPanel() {
   const [brandId, setBrandId] = useState("");
   const [modelId, setModelId] = useState("");
   const [customModel, setCustomModel] = useState("");
+  const [nameEn, setNameEn] = useState("");
   const [condition, setCondition] = useState<ProductCondition>("new");
   const [variants, setVariants] = useState<VariantDraft[]>([createVariantDraft()]);
 
@@ -248,6 +249,9 @@ export default function MobilesProductsPanel() {
     formData.append("brand", selectedBrand.label);
     formData.append("phone_model", modelLabel);
     formData.append("condition", condition ?? "");
+    if (nameEn.trim()) {
+      formData.append("name_en", nameEn.trim());
+    }
     formData.append(
       "variants",
       JSON.stringify(
@@ -275,6 +279,7 @@ export default function MobilesProductsPanel() {
       if (!response.ok) throw new Error(data.error ?? t.admin.uploadError);
       setSuccess(`${baseName} — ${t.admin.uploadSuccess}`);
       setCustomModel("");
+      setNameEn("");
       setVariants([createVariantDraft()]);
       await loadProducts();
     } catch (err) {
@@ -381,11 +386,23 @@ export default function MobilesProductsPanel() {
 
             <div className="rounded border border-brand-gray-200 bg-brand-gray-50 px-4 py-3">
               <p className="text-[10px] font-bold uppercase tracking-widest text-brand-gray-400">
-                {t.admin.productName}
+                {t.admin.productNameIt}
               </p>
               <p className="mt-1 text-sm font-semibold text-brand-navy">
                 {baseName || "—"}
               </p>
+            </div>
+
+            <div>
+              <FieldLabel htmlFor="mob-name-en">{t.admin.productNameEn}</FieldLabel>
+              <input
+                id="mob-name-en"
+                type="text"
+                value={nameEn}
+                onChange={(e) => setNameEn(e.target.value)}
+                placeholder={t.admin.productNameEnPlaceholder}
+                className="input-field"
+              />
             </div>
 
             <div className="space-y-4">

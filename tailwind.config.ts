@@ -67,9 +67,29 @@ const config: Config = {
           "0%": { transform: "translateX(0)" },
           "100%": { transform: "translateX(-50%)" },
         },
+        "fade-in-up": {
+          "0%": { opacity: "0", transform: "translateY(20px)" },
+          "100%": { opacity: "1", transform: "translateY(0)" },
+        },
+        "fade-in": {
+          "0%": { opacity: "0" },
+          "100%": { opacity: "1" },
+        },
+        "pulse-ring": {
+          "0%, 100%": { boxShadow: "0 0 0 0 rgba(30,107,255,0.45)" },
+          "50%": { boxShadow: "0 0 0 10px rgba(30,107,255,0)" },
+        },
+        "scale-in": {
+          "0%": { opacity: "0", transform: "scale(0.85)" },
+          "100%": { opacity: "1", transform: "scale(1)" },
+        },
       },
       animation: {
         marquee: "marquee 42s linear infinite",
+        "fade-in-up": "fade-in-up 0.55s ease-out forwards",
+        "fade-in": "fade-in 0.4s ease-out forwards",
+        "pulse-ring": "pulse-ring 2s ease-in-out infinite",
+        "scale-in": "scale-in 0.45s ease-out forwards",
       },
     },
   },

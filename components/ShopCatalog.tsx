@@ -16,6 +16,7 @@ import { useCatalogBrands } from "@/hooks/useCatalogBrands";
 import { usePhoneConditions } from "@/hooks/usePhoneConditions";
 import { useProducts } from "@/components/ProductsProvider";
 import { buildShopPhoneDisplays } from "@/lib/phone-listings";
+import { getProductSearchText } from "@/lib/product-i18n";
 import { productMatchesPhoneShopGroup } from "@/lib/phone-conditions";
 import { PhoneConditionOption } from "@/lib/catalog-service";
 import { PHONE_BRANDS, productMatchesBrand, productMatchesShopBrand, shopAllBrandsPath, shopBrandCatalogPath } from "@/lib/phone-brands";
@@ -171,7 +172,7 @@ function ShopCatalogContent({
   const pathname = usePathname();
   const router = useRouter();
   const searchParams = useSearchParams();
-  const { t } = useLanguage();
+  const { t, locale } = useLanguage();
   const { brands: catalogBrands } = useCatalogBrands();
   const { index: conditionIndex } = usePhoneConditions();
   const brandLabels = useMemo(
@@ -242,15 +243,15 @@ function ShopCatalogContent({
     let filtered = filterByView(products, view, brandLabels, conditionIndex);
     if (searchQuery) {
       filtered = filtered.filter((product) =>
-        `${product.name} ${product.brand}`.toLowerCase().includes(searchQuery)
+        getProductSearchText(product).includes(searchQuery)
       );
     }
     return sortProducts(filtered, sort);
   }, [products, view, searchQuery, sort, brandLabels, conditionIndex]);
 
   const shopDisplays = useMemo(
-    () => buildShopPhoneDisplays(filteredProducts),
-    [filteredProducts]
+    () => buildShopPhoneDisplays(filteredProducts, locale),
+    [filteredProducts, locale]
   );
 
   const totalPages = Math.max(1, Math.ceil(shopDisplays.length / PER_PAGE));

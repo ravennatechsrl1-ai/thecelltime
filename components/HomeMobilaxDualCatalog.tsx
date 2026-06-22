@@ -5,6 +5,7 @@ import MobilaxCatalogToolbar from "@/components/MobilaxCatalogToolbar";
 import MobilaxGridProductCard from "@/components/MobilaxGridProductCard";
 import { useLanguage } from "@/components/LanguageProvider";
 import { buildShopPhoneDisplays } from "@/lib/phone-listings";
+import { getProductDisplayName } from "@/lib/product-display-name";
 import { Product } from "@/types";
 
 interface MobilaxCatalogPanelProps {
@@ -20,12 +21,12 @@ function MobilaxCatalogPanel({
   seeMoreHref,
   groupPhoneColors = false,
 }: MobilaxCatalogPanelProps) {
-  const { t } = useLanguage();
+  const { t, locale } = useLanguage();
   const displays = groupPhoneColors
-    ? buildShopPhoneDisplays(products).slice(0, 9)
+    ? buildShopPhoneDisplays(products, locale).slice(0, 9)
     : products.slice(0, 9).map((product) => ({
         listingId: product.id,
-        title: product.name,
+        title: getProductDisplayName(product, locale),
         product,
         variants: [] as Product[],
       }));

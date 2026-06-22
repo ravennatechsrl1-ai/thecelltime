@@ -2,13 +2,18 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import SafeImage from "@/components/SafeImage";
 import ProductPriceDisplay, { PromotionBadge } from "@/components/ProductPriceDisplay";
+import { IconUser } from "@/components/icons/NavIcons";
 import { useAuth } from "@/components/AuthProvider";
 import { useLanguage } from "@/components/LanguageProvider";
-import { getCheckoutCustomer, redirectToCheckout } from "@/lib/client-checkout";
+import { getCheckoutCustomer, goToInstantCheckout } from "@/lib/client-checkout";
 import { productDetailPath } from "@/lib/product-path";
-import { getPhoneListingTitle } from "@/lib/phone-listings";
+import {
+  getProductBrandLabel,
+  getProductDisplayName,
+} from "@/lib/product-display-name";
 import { getEffectivePrice } from "@/lib/product-pricing";
 import { Product } from "@/types";
 
@@ -23,7 +28,8 @@ export default function ProductCard({
   onAddToCart,
   variant = "grid",
 }: ProductCardProps) {
-  const { t } = useLanguage();
+  const { t, locale } = useLanguage();
+  const router = useRouter();
   const { user } = useAuth();
   const [buying, setBuying] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -34,9 +40,9 @@ export default function ProductCard({
       : product.condition === "used"
         ? t.conditions.usedA
         : null;
-  const isPhone = product.category === "phones";
   const detailHref = productDetailPath(product);
-  const displayName = isPhone ? getPhoneListingTitle(product) : product.name;
+  const displayName = getProductDisplayName(product, locale);
+  const brandLabel = getProductBrandLabel(product);
   const outOfStock = product.stock <= 0;
   const salePrice = getEffectivePrice(product);
 
@@ -51,12 +57,12 @@ export default function ProductCard({
     setError(null);
 
     try {
-      await redirectToCheckout(
+      goToInstantCheckout(
         {
           lineItems: [
             {
               productId: product.id,
-              name: product.name,
+              name: getProductDisplayName(product, locale),
               price: salePrice,
               quantity: 1,
               imageUrl: product.image_url,
@@ -64,8 +70,7 @@ export default function ProductCard({
           ],
           totalAmount: salePrice,
           customer: getCheckoutCustomer(user),
-        },
-        t.cart.checkoutError
+        }
       );
     } catch (err) {
       setError(err instanceof Error ? err.message : t.cart.checkoutError);
@@ -98,7 +103,7 @@ export default function ProductCard({
 
       <div className="flex flex-1 flex-col border-t border-brand-gray-200 p-3">
         <p className="text-[10px] font-medium uppercase tracking-wider text-brand-gray-400">
-          {product.brand}
+          {brandLabel}
         </p>
         <h2 className="mt-1 line-clamp-2 min-h-[2.5rem] text-xs font-medium leading-snug text-brand-black sm:text-sm">
           {displayName}
@@ -131,33 +136,34 @@ export default function ProductCard({
           </p>
         )}
 
-        <div className="mt-3">
-          {outOfStock ? null : (
+        <div className="relative z-10 mt-3">
+          {outOfStock ? null : user ? (
             <div className="space-y-2">
               <button
                 type="button"
-                onClick={(e) => {
-                  e.preventDefault();
-                  e.stopPropagation();
-                  onAddToCart();
-                }}
+                onClick={onAddToCart}
                 className="btn-secondary w-full text-[10px] sm:text-xs"
               >
                 {t.shop.addToCart}
               </button>
               <button
                 type="button"
-                onClick={(e) => {
-                  e.preventDefault();
-                  e.stopPropagation();
-                  handleBuyNow();
-                }}
+                onClick={handleBuyNow}
                 disabled={buying}
                 className="btn-primary w-full text-[10px] sm:text-xs disabled:cursor-not-allowed disabled:opacity-40"
               >
                 {buying ? t.cart.redirecting : t.shop.buyNow}
               </button>
             </div>
+          ) : (
+            <button
+              type="button"
+              onClick={() => router.push("/login")}
+              className="flex min-h-[44px] w-full items-center justify-center gap-1.5 border border-brand-gray-300 bg-white px-3 py-2 text-[10px] font-bold uppercase tracking-wide text-brand-navy transition-all duration-200 hover:border-brand-electric hover:text-brand-electric sm:text-xs"
+            >
+              <IconUser className="h-3.5 w-3.5" />
+              {t.nav.signIn}
+            </button>
           )}
         </div>
       </div>
@@ -165,11 +171,15 @@ export default function ProductCard({
   );
 
   return (
-    <Link
-      href={detailHref}
-      className={`mobilax-product-card group flex flex-col transition-shadow duration-200 hover:shadow-md ${widthClass}`}
+    <article
+      className={`mobilax-product-card group relative flex flex-col transition-shadow duration-200 hover:shadow-md ${widthClass}`}
     >
+      <Link
+        href={detailHref}
+        className="absolute inset-0 z-0"
+        aria-label={displayName}
+      />
       {cardBody}
-    </Link>
+    </article>
   );
 }

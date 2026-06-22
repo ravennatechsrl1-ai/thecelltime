@@ -61,7 +61,7 @@ export default function AdminPage() {
       {
         id: "orders" as const,
         label: t.admin.navOrders,
-        badge: stats?.totalOrders,
+        badge: stats?.pendingFulfillmentCount,
         icon: <IconOrders className={navIconClass} />,
       },
       {
@@ -93,9 +93,18 @@ export default function AdminPage() {
   }, []);
 
   useEffect(() => {
-    if (sessionStorage.getItem("thecelltime-admin") === "1") {
-      setAuthenticated(true);
+    async function checkSession() {
+      try {
+        const response = await fetch("/api/admin/session");
+        const data: { authenticated?: boolean } = await response.json();
+        if (data.authenticated) {
+          setAuthenticated(true);
+        }
+      } catch {
+        setAuthenticated(false);
+      }
     }
+    checkSession();
   }, []);
 
   useEffect(() => {
@@ -124,7 +133,6 @@ export default function AdminPage() {
       }
 
       setAuthenticated(true);
-      sessionStorage.setItem("thecelltime-admin", "1");
     } catch (err) {
       setAuthError(err instanceof Error ? err.message : t.admin.authError);
     } finally {
@@ -132,8 +140,8 @@ export default function AdminPage() {
     }
   }
 
-  function handleLogout() {
-    sessionStorage.removeItem("thecelltime-admin");
+  async function handleLogout() {
+    await fetch("/api/admin/logout", { method: "POST" });
     setAuthenticated(false);
     setPassword("");
     setActiveView("dashboard");

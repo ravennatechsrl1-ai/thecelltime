@@ -1,12 +1,28 @@
-import { Product, ProductCategory, ProductCondition } from "@/types";
+import { ProductNameI18n, Product, ProductCategory, ProductCondition } from "@/types";
+import { parseNameI18n } from "@/lib/product-i18n";
 
-function readListingBaseName(row: Record<string, unknown>): string | null {
+function readListingNested(
+  row: Record<string, unknown>
+): Record<string, unknown> | null {
   const nested = row.phone_listings;
   if (nested && typeof nested === "object" && !Array.isArray(nested)) {
-    const base = (nested as { base_name?: unknown }).base_name;
-    if (typeof base === "string" && base.trim()) return base.trim();
+    return nested as Record<string, unknown>;
   }
   return null;
+}
+
+function readListingBaseName(row: Record<string, unknown>): string | null {
+  const listing = readListingNested(row);
+  const base = listing?.base_name;
+  if (typeof base === "string" && base.trim()) return base.trim();
+  return null;
+}
+
+function readListingBaseNameI18n(
+  row: Record<string, unknown>
+): ProductNameI18n | null {
+  const listing = readListingNested(row);
+  return parseNameI18n(listing?.base_name_i18n);
 }
 
 export function mapProductRow(row: Record<string, unknown>): Product {
@@ -19,6 +35,7 @@ export function mapProductRow(row: Record<string, unknown>): Product {
   return {
     id: row.id as string,
     name: row.name as string,
+    name_i18n: parseNameI18n(row.name_i18n),
     price: Number(row.price),
     category: row.category as ProductCategory,
     condition: row.condition as ProductCondition,
@@ -45,5 +62,6 @@ export function mapProductRow(row: Record<string, unknown>): Product {
     color: (row.color as string) ?? null,
     phone_listing_id: (row.phone_listing_id as string) ?? null,
     phone_listing_base_name: readListingBaseName(row),
+    phone_listing_base_name_i18n: readListingBaseNameI18n(row),
   };
 }

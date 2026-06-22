@@ -4,6 +4,7 @@ import { fetchAllProducts } from "@/lib/admin-analytics";
 import { isAccessorySubtype } from "@/lib/accessories-catalog";
 import { isProtectionSubtype } from "@/lib/protection-catalog";
 import { mapProductRow } from "@/lib/map-product";
+import { readNameI18nFromFormData } from "@/lib/product-i18n";
 import { getSupabaseClient } from "@/utils/supabase";
 import { ProductCategory, ProductCondition } from "@/types";
 
@@ -21,7 +22,15 @@ export async function POST(request: NextRequest) {
   try {
     const formData = await request.formData();
 
-    const name = formData.get("name")?.toString().trim();
+    const nameI18n = readNameI18nFromFormData(formData);
+    if (!nameI18n?.it) {
+      return NextResponse.json(
+        { error: "Campi obbligatori mancanti." },
+        { status: 400 }
+      );
+    }
+
+    const name = nameI18n.it;
     const brand = formData.get("brand")?.toString().trim();
     const category = formData.get("category")?.toString() as ProductCategory;
     const conditionRaw = formData.get("condition")?.toString();
@@ -29,7 +38,7 @@ export async function POST(request: NextRequest) {
     const stockRaw = formData.get("stock")?.toString();
     const imageFile = formData.get("image");
 
-    if (!name || !brand || !category || !priceRaw || !stockRaw) {
+    if (!brand || !category || !priceRaw || !stockRaw) {
       return NextResponse.json(
         { error: "Campi obbligatori mancanti." },
         { status: 400 }
@@ -124,6 +133,7 @@ export async function POST(request: NextRequest) {
 
     const insertRow: Record<string, unknown> = {
       name,
+      name_i18n: nameI18n,
       brand,
       category,
       condition: category === "phones" ? condition : null,

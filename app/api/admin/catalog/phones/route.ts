@@ -11,7 +11,6 @@ import { getSupabaseClient } from "@/utils/supabase";
 export async function GET() {
   try {
     const supabase = getSupabaseClient();
-    await ensureCatalogDefaults(supabase);
     const catalog = await fetchPhoneCatalog(supabase);
     return NextResponse.json(catalog);
   } catch (error) {

@@ -2,11 +2,11 @@
 
 import { useState } from "react";
 import Image from "next/image";
-import { useAuth } from "@/components/AuthProvider";
+import { useRouter } from "next/navigation";
 import { useCart } from "@/components/CartProvider";
 import { useLanguage } from "@/components/LanguageProvider";
-import { getCheckoutCustomer, redirectToCheckout } from "@/lib/client-checkout";
-import { getEffectivePrice } from "@/lib/product-pricing";
+import { clearInstantCheckout } from "@/lib/instant-checkout";
+import { getProductDisplayName } from "@/lib/product-display-name";
 import ProductPriceDisplay, { ProductPriceInline } from "@/components/ProductPriceDisplay";
 
 export default function CartDrawer() {
@@ -19,7 +19,7 @@ export default function CartDrawer() {
     removeItem,
     updateQuantity,
   } = useCart();
-  const { t, formatPrice } = useLanguage();
+  const { t, formatPrice, locale } = useLanguage();
 
   if (!isOpen) return null;
 
@@ -67,14 +67,16 @@ export default function CartDrawer() {
                   <div className="relative h-16 w-16 shrink-0 bg-brand-gray-50">
                     <Image
                       src={product.image_url}
-                      alt={product.name}
+                      alt={getProductDisplayName(product, locale)}
                       fill
                       className="object-cover"
                       sizes="64px"
                     />
                   </div>
                   <div className="flex min-w-0 flex-1 flex-col">
-                    <p className="truncate text-sm font-semibold">{product.name}</p>
+                    <p className="truncate text-sm font-semibold">
+                      {getProductDisplayName(product, locale)}
+                    </p>
                     <ProductPriceInline product={product} />
                     <div className="mt-2 flex items-center gap-2">
                       <button
@@ -129,53 +131,23 @@ export default function CartDrawer() {
 }
 
 function CheckoutButton() {
-  const { items, total } = useCart();
-  const { user } = useAuth();
+  const router = useRouter();
+  const { closeCart } = useCart();
   const { t } = useLanguage();
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
 
-  async function handleCheckout() {
-    setLoading(true);
-    setError(null);
-
-    try {
-      await redirectToCheckout(
-        {
-          lineItems: items.map(({ product, quantity }) => ({
-            productId: product.id,
-            name: product.name,
-            price: getEffectivePrice(product),
-            quantity,
-            imageUrl: product.image_url,
-          })),
-          totalAmount: total,
-          customer: getCheckoutCustomer(user),
-        },
-        t.cart.checkoutError
-      );
-    } catch (err) {
-      setError(err instanceof Error ? err.message : t.common.errorUnexpected);
-    } finally {
-      setLoading(false);
-    }
+  function handleCheckout() {
+    clearInstantCheckout();
+    closeCart();
+    router.push("/checkout");
   }
 
   return (
-    <div>
-      {error && (
-        <p className="mb-3 text-xs text-red-600" role="alert">
-          {error}
-        </p>
-      )}
-      <button
-        type="button"
-        onClick={handleCheckout}
-        disabled={loading}
-        className="btn-primary disabled:opacity-50"
-      >
-        {loading ? t.cart.redirecting : t.cart.checkout}
-      </button>
-    </div>
+    <button
+      type="button"
+      onClick={handleCheckout}
+      className="btn-primary w-full"
+    >
+      {t.cart.checkout}
+    </button>
   );
 }

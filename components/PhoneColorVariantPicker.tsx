@@ -73,6 +73,7 @@ export default function PhoneColorVariantPicker({
                 />
               </div>
               <span
+                translate="no"
                 className={`truncate px-2 py-2 text-center leading-tight ${
                   isDetail ? "text-xs sm:text-sm" : "text-[9px] sm:text-[10px]"
                 } ${

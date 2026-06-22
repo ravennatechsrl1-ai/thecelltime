@@ -48,6 +48,14 @@ export default function Footer() {
                   {t.nav.track}
                 </Link>
               </li>
+              <li>
+                <Link
+                  href="/track-order"
+                  className="text-brand-gray-400 transition-colors duration-200 hover:text-brand-electric-light"
+                >
+                  {t.orderTrack.title}
+                </Link>
+              </li>
             </ul>
           </div>
 
@@ -56,23 +64,8 @@ export default function Footer() {
               {t.footer.contacts}
             </p>
             <ul className="space-y-2 text-sm text-brand-gray-400">
-              <li className="font-semibold text-brand-gray-300">
-                {COMPANY_INFO.name}
-              </li>
               <li>{COMPANY_INFO.addressLine1}</li>
               <li>{COMPANY_INFO.addressLine2}</li>
-              <li>
-                {t.footer.vatId}: {COMPANY_INFO.vatId}
-              </li>
-              <li>
-                {t.footer.tel}:{" "}
-                <a
-                  href={`tel:${COMPANY_INFO.tel}`}
-                  className="transition-colors hover:text-brand-electric-light"
-                >
-                  {COMPANY_INFO.tel}
-                </a>
-              </li>
               <li>
                 {t.footer.mobile}:{" "}
                 <a
@@ -100,6 +93,7 @@ export default function Footer() {
             </p>
             <ul className="space-y-2 text-sm text-brand-gray-400">
               <li>{t.footer.weekdays}</li>
+              <li>{t.footer.saturday}</li>
               <li>{t.footer.sunday}</li>
             </ul>
           </div>

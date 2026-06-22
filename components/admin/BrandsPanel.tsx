@@ -19,6 +19,7 @@ import {
   normalizePhoneCatalog,
   PhoneBrandOption,
 } from "@/lib/catalog-service";
+import { adminFetch } from "@/lib/admin-api";
 import {
   PROTECTION_DEVICE_TYPES,
   ProtectionDeviceType,
@@ -199,16 +200,15 @@ function PhoneBrandsSection() {
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
-  const loadBrands = useCallback(async () => {
-    setLoading(true);
+  const loadBrands = useCallback(async (options?: { silent?: boolean }) => {
+    if (!options?.silent) setLoading(true);
     try {
-      const response = await fetch("/api/admin/catalog/phones");
-      const data = await response.json();
+      const { data } = await adminFetch("/api/admin/catalog/phones");
       setBrands(normalizePhoneCatalog(data).brands);
     } catch {
       setBrands([]);
     } finally {
-      setLoading(false);
+      if (!options?.silent) setLoading(false);
     }
   }, []);
 
@@ -232,7 +232,11 @@ function PhoneBrandsSection() {
         body: JSON.stringify({ kind: "brand", label: trimmed }),
       });
       const data = await response.json();
-      if (!response.ok) throw new Error(data.error ?? t.admin.uploadError);
+      if (!response.ok) {
+        const message =
+          typeof data.error === "string" ? data.error : t.admin.uploadError;
+        throw new Error(message);
+      }
       setLabel("");
       setMessage(t.admin.brandAdded);
       await loadBrands();
@@ -259,7 +263,11 @@ function PhoneBrandsSection() {
         }
       );
       const data = await response.json();
-      if (!response.ok) throw new Error(data.error ?? t.admin.uploadError);
+      if (!response.ok) {
+        const message =
+          typeof data.error === "string" ? data.error : t.admin.uploadError;
+        throw new Error(message);
+      }
       setEditingBrand(null);
       setMessage(t.admin.brandUpdated);
       await loadBrands();
@@ -280,18 +288,22 @@ function PhoneBrandsSection() {
     setMessage(null);
 
     try {
-      const response = await fetch(
+      const { response, data } = await adminFetch(
         `/api/admin/catalog/phones/brands/${brand.id}`,
         { method: "DELETE" }
       );
-      const data = await response.json();
-      if (!response.ok) throw new Error(data.error ?? t.admin.uploadError);
+      if (!response.ok) {
+        const message =
+          typeof data.error === "string" ? data.error : t.admin.uploadError;
+        throw new Error(message);
+      }
       if (editingBrand?.id === brand.id) setEditingBrand(null);
+      setBrands((current) => current.filter((b) => b.id !== brand.id));
       setMessage(t.admin.brandDeleted);
-      await loadBrands();
+      setDeletingId(null);
+      void loadBrands({ silent: true });
     } catch (err) {
       setError(err instanceof Error ? err.message : t.admin.uploadError);
-    } finally {
       setDeletingId(null);
     }
   }
@@ -379,18 +391,17 @@ function DeviceBrandsSection({ context }: { context: "protection" | "accessories
     watch: t.protection.deviceWatch,
   };
 
-  const loadBrands = useCallback(async () => {
-    setLoading(true);
+  const loadBrands = useCallback(async (options?: { silent?: boolean }) => {
+    if (!options?.silent) setLoading(true);
     try {
-      const response = await fetch(
+      const { data } = await adminFetch(
         `/api/admin/catalog/devices?deviceType=${deviceType}`
       );
-      const data = await response.json();
       setBrands(normalizeDeviceCatalog(data).brands);
     } catch {
       setBrands([]);
     } finally {
-      setLoading(false);
+      if (!options?.silent) setLoading(false);
     }
   }, [deviceType]);
 
@@ -418,7 +429,11 @@ function DeviceBrandsSection({ context }: { context: "protection" | "accessories
         body: JSON.stringify({ kind: "brand", deviceType, label: trimmed }),
       });
       const data = await response.json();
-      if (!response.ok) throw new Error(data.error ?? t.admin.uploadError);
+      if (!response.ok) {
+        const message =
+          typeof data.error === "string" ? data.error : t.admin.uploadError;
+        throw new Error(message);
+      }
       setLabel("");
       setMessage(t.admin.brandAdded);
       await loadBrands();
@@ -445,7 +460,11 @@ function DeviceBrandsSection({ context }: { context: "protection" | "accessories
         }
       );
       const data = await response.json();
-      if (!response.ok) throw new Error(data.error ?? t.admin.uploadError);
+      if (!response.ok) {
+        const message =
+          typeof data.error === "string" ? data.error : t.admin.uploadError;
+        throw new Error(message);
+      }
       setEditingBrand(null);
       setMessage(t.admin.brandUpdated);
       await loadBrands();
@@ -466,18 +485,22 @@ function DeviceBrandsSection({ context }: { context: "protection" | "accessories
     setMessage(null);
 
     try {
-      const response = await fetch(
+      const { response, data } = await adminFetch(
         `/api/admin/catalog/devices/brands/${brand.id}`,
         { method: "DELETE" }
       );
-      const data = await response.json();
-      if (!response.ok) throw new Error(data.error ?? t.admin.uploadError);
+      if (!response.ok) {
+        const message =
+          typeof data.error === "string" ? data.error : t.admin.uploadError;
+        throw new Error(message);
+      }
       if (editingBrand?.id === brand.id) setEditingBrand(null);
+      setBrands((current) => current.filter((b) => b.id !== brand.id));
       setMessage(t.admin.brandDeleted);
-      await loadBrands();
+      setDeletingId(null);
+      void loadBrands({ silent: true });
     } catch (err) {
       setError(err instanceof Error ? err.message : t.admin.uploadError);
-    } finally {
       setDeletingId(null);
     }
   }

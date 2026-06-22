@@ -1,4 +1,6 @@
 import { buildPhoneProductName } from "@/lib/admin-catalog";
+import { Locale } from "@/lib/i18n/types";
+import { resolveLocalizedText } from "@/lib/product-i18n";
 import { getEffectivePrice } from "@/lib/product-pricing";
 import {
   getPhoneColorLabel,
@@ -34,9 +36,24 @@ export function phoneProductPath(listingOrProductId: string): string {
 }
 
 /** Listing title without storage or color (for cards and detail heading). */
-export function getPhoneListingTitle(product: Product): string {
+export function getPhoneListingTitle(
+  product: Product,
+  locale: Locale = "it"
+): string {
+  if (product.phone_listing_base_name_i18n) {
+    return resolveLocalizedText(
+      locale,
+      product.phone_listing_base_name ?? product.name,
+      product.phone_listing_base_name_i18n
+    );
+  }
+
   if (product.phone_listing_base_name?.trim()) {
-    return product.phone_listing_base_name.trim();
+    return resolveLocalizedText(
+      locale,
+      product.phone_listing_base_name,
+      product.name_i18n
+    );
   }
 
   let name = getPhoneDisplayName(product);
@@ -44,7 +61,8 @@ export function getPhoneListingTitle(product: Product): string {
   if (storage && name.endsWith(` ${storage}`)) {
     name = name.slice(0, -(storage.length + 1)).trim();
   }
-  return name;
+
+  return resolveLocalizedText(locale, name, product.name_i18n);
 }
 
 export function getListingId(product: Product): string {
@@ -106,7 +124,10 @@ function findLegacySiblings(product: Product, allProducts: Product[]): Product[]
   return siblings.length > 1 ? sortVariants(siblings) : [];
 }
 
-export function buildShopPhoneDisplays(products: Product[]): ShopPhoneDisplay[] {
+export function buildShopPhoneDisplays(
+  products: Product[],
+  locale: Locale = "it"
+): ShopPhoneDisplay[] {
   const displays: ShopPhoneDisplay[] = [];
   const seenListings = new Set<string>();
   const seenLegacy = new Set<string>();
@@ -115,7 +136,7 @@ export function buildShopPhoneDisplays(products: Product[]): ShopPhoneDisplay[] 
     if (product.category !== "phones") {
       displays.push({
         listingId: product.id,
-        title: product.name,
+        title: resolveLocalizedText(locale, product.name, product.name_i18n),
         product,
         variants: [],
       });
@@ -131,7 +152,7 @@ export function buildShopPhoneDisplays(products: Product[]): ShopPhoneDisplay[] 
       const representative = pickRepresentativeVariant(variants) ?? product;
       displays.push({
         listingId: lid,
-        title: getPhoneListingTitle(representative),
+        title: getPhoneListingTitle(representative, locale),
         product: representative,
         variants,
       });
@@ -146,7 +167,7 @@ export function buildShopPhoneDisplays(products: Product[]): ShopPhoneDisplay[] 
       const representative = pickRepresentativeVariant(legacy) ?? product;
       displays.push({
         listingId: representative.id,
-        title: getPhoneListingTitle(representative),
+        title: getPhoneListingTitle(representative, locale),
         product: representative,
         variants: legacy,
       });
@@ -155,7 +176,7 @@ export function buildShopPhoneDisplays(products: Product[]): ShopPhoneDisplay[] 
 
     displays.push({
       listingId: product.id,
-      title: getPhoneListingTitle(product),
+      title: getPhoneListingTitle(product, locale),
       product,
       variants: [product],
     });
@@ -173,6 +194,28 @@ export function buildVariantProductName(
     return `${listing.base_name} ${storage} ${color}`.trim();
   }
   return buildPhoneProductName(listing.brand, listing.phone_model, storage, color);
+}
+
+export function buildVariantProductNameI18n(
+  listing: Pick<PhoneListing, "brand" | "phone_model" | "base_name"> & {
+    base_name_i18n?: import("@/types").ProductNameI18n | null;
+  },
+  storage: string,
+  color: string
+): import("@/types").ProductNameI18n {
+  const suffix = `${storage} ${color}`.trim();
+  const itBase = listing.base_name_i18n?.it?.trim() || listing.base_name;
+  const enBase = listing.base_name_i18n?.en?.trim() || itBase;
+
+  if (itBase && suffix) {
+    return {
+      it: `${itBase} ${suffix}`.trim(),
+      en: `${enBase} ${suffix}`.trim(),
+    };
+  }
+
+  const fallback = buildVariantProductName(listing, storage, color);
+  return { it: fallback, en: fallback };
 }
 
 export function findVariantByOptions(

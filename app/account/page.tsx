@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import OrderTracker from "@/components/OrderTracker";
 import { useAuth } from "@/components/AuthProvider";
 import { useLanguage } from "@/components/LanguageProvider";
 
@@ -118,6 +119,10 @@ export default function AccountPage() {
               {t.auth.logout}
             </button>
           </div>
+        </div>
+
+        <div className="mt-8">
+          <OrderTracker compact defaultEmail={user.email ?? ""} />
         </div>
       </div>
     </div>

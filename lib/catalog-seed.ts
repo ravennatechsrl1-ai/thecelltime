@@ -75,13 +75,6 @@ export async function ensureCatalogDefaults(
       console.error("[catalog-seed]", step.name, error);
     }
   }
-
-  try {
-    const { ensureBrandsSynced } = await import("@/lib/catalog-brands-sync");
-    await ensureBrandsSynced(supabase);
-  } catch (error) {
-    console.error("[catalog-seed] ensureBrandsSynced", error);
-  }
 }
 
 async function tableCount(

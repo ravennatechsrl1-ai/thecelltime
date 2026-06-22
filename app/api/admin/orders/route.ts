@@ -1,9 +1,10 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { fetchAllOrders } from "@/lib/admin-analytics";
 
-export async function GET() {
+export async function GET(request: NextRequest) {
   try {
-    const orders = await fetchAllOrders();
+    const search = request.nextUrl.searchParams.get("q") ?? undefined;
+    const orders = await fetchAllOrders({ search });
     return NextResponse.json({ orders });
   } catch (error) {
     console.error("[admin/orders]", error);

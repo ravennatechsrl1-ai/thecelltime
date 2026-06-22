@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { ReactNode } from "react";
 import ErrorBoundary from "@/components/ErrorBoundary";
 import { AuthProvider } from "@/components/AuthProvider";
@@ -24,6 +25,21 @@ function SectionFallback({ message }: { message: string }) {
 
 function AppChrome({ children }: { children: ReactNode }) {
   const { t } = useLanguage();
+  const pathname = usePathname();
+  const isCheckout = pathname?.startsWith("/checkout") ?? false;
+
+  if (isCheckout) {
+    return (
+      <>
+        <ErrorBoundary fallback={<SectionFallback message={t.errors.sectionUnavailable} />}>
+          <main className="flex-1">{children}</main>
+        </ErrorBoundary>
+        <ErrorBoundary fallback={null}>
+          <CartDrawer />
+        </ErrorBoundary>
+      </>
+    );
+  }
 
   return (
     <>

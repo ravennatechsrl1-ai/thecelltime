@@ -52,6 +52,9 @@ export async function POST(request: NextRequest) {
           }))
         ),
       },
+      payment_intent_data: {
+        receipt_email: body.customer.email,
+      },
       success_url: `${siteUrl}/checkout/success?session_id={CHECKOUT_SESSION_ID}`,
       cancel_url: `${siteUrl}/checkout/cancelled`,
     });

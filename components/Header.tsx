@@ -20,7 +20,6 @@ import {
   IconAccessories,
   IconBrands,
   IconCart,
-  IconEquipment,
   IconPhone,
   IconPromotions,
   IconProtection,
@@ -97,19 +96,6 @@ export default function Header() {
           { href: "/shop/accessories/tablets", label: t.accessoriesCatalog.deviceTablets },
           { href: "/shop/accessories/computers", label: t.accessoriesCatalog.deviceComputers },
           { href: "/shop/accessories/watch", label: t.accessoriesCatalog.deviceWatch },
-        ],
-      },
-      {
-        id: "equipment",
-        label: t.nav.equipment,
-        icon: (
-          <NavIconWrap inverted>
-            <IconEquipment className="h-4 w-4" />
-          </NavIconWrap>
-        ),
-        items: [
-          { href: "/shop/accessories/chargers", label: t.nav.chargers },
-          { href: "/shop/accessories/cables", label: t.nav.cables },
         ],
       },
       {
@@ -237,6 +223,13 @@ export default function Header() {
                             onClick={() => setAuthOpen(false)}
                           >
                             {t.auth.myAccount}
+                          </Link>
+                          <Link
+                            href="/track-order"
+                            className="block px-4 py-2.5 text-sm font-medium text-brand-gray-800 transition-colors hover:bg-brand-gray-50"
+                            onClick={() => setAuthOpen(false)}
+                          >
+                            {t.orderTrack.title}
                           </Link>
                           <button
                             type="button"

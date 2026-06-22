@@ -11,11 +11,13 @@ import {
 } from "react";
 import { CartItem, Product } from "@/types";
 import { getEffectivePrice } from "@/lib/product-pricing";
+import { CART_STORAGE_KEY, loadCartFromStorage } from "@/lib/cart-storage";
 
 interface CartContextValue {
   items: CartItem[];
   itemCount: number;
   total: number;
+  hydrated: boolean;
   addItem: (product: Product) => void;
   removeItem: (productId: string) => void;
   updateQuantity: (productId: string, quantity: number) => void;
@@ -26,21 +28,6 @@ interface CartContextValue {
 }
 
 const CartContext = createContext<CartContextValue | null>(null);
-
-const CART_STORAGE_KEY = "thecelltime-cart";
-
-function loadCartFromStorage(): CartItem[] {
-  if (typeof window === "undefined") return [];
-  try {
-    const stored = localStorage.getItem(CART_STORAGE_KEY);
-    if (!stored) return [];
-    const parsed: unknown = JSON.parse(stored);
-    if (!Array.isArray(parsed)) return [];
-    return parsed as CartItem[];
-  } catch {
-    return [];
-  }
-}
 
 export function CartProvider({ children }: { children: ReactNode }) {
   const [items, setItems] = useState<CartItem[]>([]);
@@ -117,6 +104,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
       items,
       itemCount,
       total,
+      hydrated,
       addItem,
       removeItem,
       updateQuantity,
@@ -129,6 +117,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
       items,
       itemCount,
       total,
+      hydrated,
       addItem,
       removeItem,
       updateQuantity,

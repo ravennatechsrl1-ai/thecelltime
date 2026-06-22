@@ -1,7 +1,6 @@
 import { notFound } from "next/navigation";
 import PhoneProductDetail from "@/components/PhoneProductDetail";
 import {
-  getPhoneListingTitle,
   pickInitialVariant,
   resolveListingVariants,
 } from "@/lib/phone-listings";
@@ -22,12 +21,10 @@ export default async function PhoneProductPage({ params }: PhoneProductPageProps
     notFound();
   }
 
-  const title = getPhoneListingTitle(variants[0]);
   const initialVariant = pickInitialVariant(variants, productId);
 
   return (
     <PhoneProductDetail
-      title={title}
       variants={variants}
       initialVariant={initialVariant}
     />

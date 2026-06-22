@@ -1,8 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { revalidateTag } from "next/cache";
 import { buildPhoneProductName } from "@/lib/admin-catalog";
-import { buildVariantProductName } from "@/lib/phone-listings";
+import { buildVariantProductName, buildVariantProductNameI18n } from "@/lib/phone-listings";
 import { mapProductRow } from "@/lib/map-product";
+import { buildNameI18nFromForm } from "@/lib/product-i18n";
 import { uploadProductImage } from "@/lib/upload-product-image";
 import { getSupabaseClient } from "@/utils/supabase";
 import { Product } from "@/types";
@@ -73,6 +74,8 @@ export async function POST(request: NextRequest) {
 
     const supabase = getSupabaseClient();
     const baseName = buildPhoneProductName(brand, phoneModel, "", "");
+    const nameEn = formData.get("name_en")?.toString();
+    const baseNameI18n = buildNameI18nFromForm(baseName, nameEn);
 
     const { data: listing, error: listingError } = await supabase
       .from("phone_listings")
@@ -81,6 +84,7 @@ export async function POST(request: NextRequest) {
         phone_model: phoneModel,
         condition,
         base_name: baseName,
+        base_name_i18n: baseNameI18n,
       })
       .select("*")
       .single();
@@ -99,7 +103,17 @@ export async function POST(request: NextRequest) {
       const variant = variants[i];
       const imageFile = formData.get(`image_${i}`) as File;
       const imageUrl = await uploadProductImage(supabase, imageFile);
-      const name = buildVariantProductName(
+      const nameI18n = buildVariantProductNameI18n(
+        {
+          brand,
+          phone_model: phoneModel,
+          base_name: baseName,
+          base_name_i18n: baseNameI18n,
+        },
+        variant.storage,
+        variant.color
+      );
+      const name = nameI18n.it ?? buildVariantProductName(
         {
           brand,
           phone_model: phoneModel,
@@ -113,6 +127,7 @@ export async function POST(request: NextRequest) {
         .from("products")
         .insert({
           name,
+          name_i18n: nameI18n,
           brand,
           category: "phones",
           condition,
@@ -137,7 +152,7 @@ export async function POST(request: NextRequest) {
       createdProducts.push(
         mapProductRow({
           ...(data as Record<string, unknown>),
-          phone_listings: { base_name: baseName },
+          phone_listings: { base_name: baseName, base_name_i18n: baseNameI18n },
         })
       );
     }

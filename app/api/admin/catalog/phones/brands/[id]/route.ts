@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { revalidateTag } from "next/cache";
 import { getSupabaseClient } from "@/utils/supabase";
+import { removeDeviceBrandsBySlug } from "@/lib/catalog-brands-sync";
 
 function invalidateBrandCatalog() {
   revalidateTag("catalog-brands");
@@ -109,13 +110,30 @@ export async function DELETE(
       );
     }
 
-    const { error } = await supabase
+    const { data: deleted, error } = await supabase
       .from("catalog_phone_brands")
       .delete()
-      .eq("id", id);
+      .eq("id", id)
+      .select("id");
 
     if (error) {
       return NextResponse.json({ error: error.message }, { status: 400 });
+    }
+
+    if (!deleted?.length) {
+      return NextResponse.json(
+        {
+          error:
+            "Impossibile eliminare la marca. Verificare i permessi del database.",
+        },
+        { status: 403 }
+      );
+    }
+
+    try {
+      await removeDeviceBrandsBySlug(supabase, existing.slug as string);
+    } catch (syncError) {
+      console.error("[admin/catalog/phones/brands/delete] device cleanup", syncError);
     }
 
     invalidateBrandCatalog();

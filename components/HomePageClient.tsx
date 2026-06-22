@@ -64,11 +64,11 @@ export default function HomePageClient({
         accessoriesAndProtection={accessoriesAndProtection}
       />
 
-      <HomeCategoryNav />
-
       <ErrorBoundary fallback={null}>
         <HeroCarousel />
       </ErrorBoundary>
+
+      <HomeCategoryNav />
 
       <HomeBrandLogosSlider />
 

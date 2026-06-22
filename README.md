@@ -1,62 +1,97 @@
-# TheCellTime — Piattaforma E-Commerce & Riparazioni
+# TheCellTime — E-Commerce & Repairs
 
-Piattaforma mobile-first per vendita telefoni/accessori e gestione riparazioni, ispirata all'estetica industriale minimalista di Mobilax.
+Mobile-first shop for phones, accessories, repairs, checkout (Stripe), admin panel, and order tracking.
 
 ## Stack
 
 - **Next.js 15** (App Router)
-- **TypeScript** (strict, no `any`)
-- **Tailwind CSS** (mobile-first)
-- **Supabase** (database, storage, realtime)
-- **Stripe** (checkout EUR)
+- **TypeScript**
+- **Tailwind CSS**
+- **Supabase** (database, auth, storage)
+- **Stripe** (payments)
+- **Nodemailer** (order emails via Gmail SMTP)
 
-## Setup
-
-1. Installare le dipendenze:
+## Local setup
 
 ```bash
 npm install
-```
-
-2. Copiare le variabili d'ambiente:
-
-```bash
 cp .env.example .env.local
-```
-
-3. Configurare Supabase — eseguire lo script SQL in `supabase/migrations/001_initial_schema.sql` nel SQL Editor del progetto.
-
-4. Avviare il server di sviluppo:
-
-```bash
+# Fill in all values in .env.local
 npm run dev
 ```
 
-## Variabili d'ambiente
+Run Supabase migrations in order from `supabase/migrations/` (001 through 024) in the Supabase SQL Editor.
 
-| Variabile | Descrizione |
-|-----------|-------------|
-| `NEXT_PUBLIC_SUPABASE_URL` | URL progetto Supabase |
-| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Chiave anonima Supabase |
-| `STRIPE_SECRET_KEY` | Chiave segreta Stripe (server) |
-| `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY` | Chiave pubblica Stripe |
-| `NEXT_PUBLIC_SITE_URL` | URL deploy (es. `https://thecelltime.it`) |
-| `ADMIN_PASSWORD` | Password pannello admin |
+## Production deployment (Vercel)
 
-## Struttura
+### 1. Environment variables
 
-- `/` — Homepage
-- `/shop` — Catalogo prodotti
-- `/repair` — Prenotazione riparazione
-- `/track` — Tracciamento stato ticket
-- `/admin` — Pannello gestionale
-- `/api/checkout` — Stripe Checkout Session
+Set these in Vercel → Project → Settings → Environment Variables:
 
-## Lingue (i18n)
+| Variable | Required | Notes |
+|----------|----------|-------|
+| `NEXT_PUBLIC_SUPABASE_URL` | Yes | Supabase project URL |
+| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Yes | Supabase anon key |
+| `SUPABASE_SERVICE_ROLE_KEY` | Yes | Orders, webhooks, order tracking API |
+| `STRIPE_SECRET_KEY` | Yes | Use **live** keys for production |
+| `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY` | Yes | Live publishable key |
+| `STRIPE_WEBHOOK_SECRET` | Yes | From Stripe webhook endpoint |
+| `NEXT_PUBLIC_SITE_URL` | Yes | `https://www.thecelltime.com` |
+| `ADMIN_PASSWORD` | Yes | Strong password (not `admin123`) |
+| `GMAIL_APP_PASSWORD` | Yes | Google App Password for SMTP |
+| `ORDER_EMAIL_FROM` | Yes | `info.celltime@gmail.com` |
+| `SMTP_USER` | Yes | Same as sender email |
 
-Supporto multilingua integrato: **Italiano** (default), **English**, **Français**.
+### 2. Supabase
 
-- Selettore lingua nell'header (IT / EN / FR)
-- Preferenza salvata in `localStorage`
-- Traduzioni in `lib/i18n/translations/`
-- Prezzi formattati nella locale selezionata (sempre EUR)
+Apply all migrations (`001`–`024`) on the production database if not already applied.
+
+### 3. Stripe
+
+1. Switch to **Live mode** in Stripe Dashboard.
+2. Create webhook: `payment_intent.succeeded` → `https://www.thecelltime.com/api/stripe/webhook`
+3. Copy webhook signing secret to `STRIPE_WEBHOOK_SECRET`.
+4. Enable **Customer emails → Successful payments** (optional Stripe receipts).
+
+### 4. Gmail
+
+Use a Google **App Password** (2FA required) for `GMAIL_APP_PASSWORD`.
+
+### 5. Deploy
+
+```bash
+git push origin main
+```
+
+Or connect the GitHub repo to Vercel for automatic deploys.
+
+## Key routes
+
+| Route | Purpose |
+|-------|---------|
+| `/` | Homepage |
+| `/shop` | Product catalog |
+| `/checkout` | Stripe checkout |
+| `/track-order` | Order tracking by ID + email |
+| `/track` | Repair ticket tracking |
+| `/account` | Customer account + order tracker |
+| `/admin` | Admin panel (password protected) |
+
+## Post-deploy smoke test
+
+1. Browse shop, add to cart, complete test/live payment.
+2. Confirm order appears in `/admin` → Orders.
+3. Confirm customer receives confirmation email (check spam once).
+4. Update order status → customer receives status email.
+5. Track order at `/track-order` with order ID + email.
+6. Verify admin APIs return 401 without login (open `/api/admin/stats` in browser).
+
+## Security notes
+
+- Admin API routes require an httpOnly session cookie after login.
+- Never commit `.env.local` or share `SUPABASE_SERVICE_ROLE_KEY`.
+- Use a strong `ADMIN_PASSWORD` in production.
+
+## i18n
+
+Italian (default), English, French — `lib/i18n/translations/`
