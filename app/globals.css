@@ -108,6 +108,22 @@
   }
 
   .checkout-input {
-    @apply w-full rounded-md border border-brand-gray-300 bg-white px-3 py-2.5 text-sm text-brand-navy outline-none transition-colors focus:border-brand-electric focus:ring-1 focus:ring-brand-electric;
+    @apply w-full rounded-lg border border-brand-gray-300 bg-white px-3 py-2.5 text-sm text-brand-navy outline-none transition-colors focus:border-brand-electric focus:ring-2 focus:ring-brand-electric/20;
+  }
+
+  .checkout-input-readonly {
+    @apply checkout-input cursor-not-allowed border-brand-gray-200 bg-brand-gray-50 text-brand-gray-700;
+  }
+
+  .checkout-section {
+    @apply rounded-2xl border border-brand-gray-200 bg-white p-5 shadow-card sm:p-6;
+  }
+
+  .checkout-section-title {
+    @apply flex items-center gap-3 text-base font-bold text-brand-navy;
+  }
+
+  .checkout-step {
+    @apply flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-brand-electric/10 text-xs font-black text-brand-electric;
   }
 }

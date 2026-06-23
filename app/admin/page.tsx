@@ -2,6 +2,7 @@
 
 import { FormEvent, useCallback, useEffect, useMemo, useState } from "react";
 import SiteLogo from "@/components/SiteLogo";
+import PasswordInput from "@/components/PasswordInput";
 import {
   IconBrands,
   IconCustomers,
@@ -10,6 +11,7 @@ import {
   IconProducts,
   IconPromotion,
   IconRepair,
+  IconSettings,
 } from "@/components/admin/AdminStatIcons";
 import AdminShell, { AdminView } from "@/components/admin/AdminShell";
 import CatalogProductsPanel from "@/components/admin/CatalogProductsPanel";
@@ -19,6 +21,7 @@ import DashboardOverview from "@/components/admin/DashboardOverview";
 import OrdersPanel from "@/components/admin/OrdersPanel";
 import PromotionsPanel from "@/components/admin/PromotionsPanel";
 import RepairsPanel from "@/components/admin/RepairsPanel";
+import SettingsPanel from "@/components/admin/SettingsPanel";
 import { useLanguage } from "@/components/LanguageProvider";
 import { AdminDashboardStats } from "@/types";
 
@@ -74,6 +77,11 @@ export default function AdminPage() {
         label: t.admin.navRepairs,
         badge: stats?.activeRepairs,
         icon: <IconRepair className={navIconClass} />,
+      },
+      {
+        id: "settings" as const,
+        label: t.admin.navSettings,
+        icon: <IconSettings className={navIconClass} />,
       },
     ],
     [t, stats]
@@ -179,14 +187,14 @@ export default function AdminPage() {
             >
               {t.admin.password}
             </label>
-            <input
+            <PasswordInput
               id="admin-password"
-              type="password"
               value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              className="w-full rounded-lg border border-white/15 bg-white/10 px-4 py-3 text-white placeholder:text-white/30 outline-none transition-colors focus:border-brand-electric focus:ring-2 focus:ring-brand-electric/30"
+              onChange={setPassword}
               required
               autoComplete="current-password"
+              inputClassName="w-full rounded-lg border border-white/15 bg-white/10 px-4 py-3 pr-11 text-white placeholder:text-white/30 outline-none transition-colors focus:border-brand-electric focus:ring-2 focus:ring-brand-electric/30"
+              toggleClassName="text-white/40 hover:text-white"
             />
           </div>
 
@@ -232,6 +240,7 @@ export default function AdminPage() {
       {activeView === "orders" && <OrdersPanel />}
       {activeView === "customers" && <CustomersPanel />}
       {activeView === "repairs" && <RepairsPanel />}
+      {activeView === "settings" && <SettingsPanel />}
     </AdminShell>
   );
 }

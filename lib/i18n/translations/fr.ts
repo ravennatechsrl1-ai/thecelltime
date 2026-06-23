@@ -302,6 +302,12 @@ export const fr: Translations = {
     city: "Ville",
     postalCode: "Code postal",
     phone: "Téléphone",
+    emailLockedHint: "Depuis votre compte — non modifiable ici.",
+    emailRequired: "Veuillez saisir une adresse e-mail valide.",
+    completeDeliveryFirst: "Remplissez tous les champs de livraison pour débloquer le paiement.",
+    deliveryIncomplete: "Veuillez saisir l'adresse complète et le téléphone avant de payer.",
+    paymentLoading: "Chargement du paiement sécurisé…",
+    secureCheckout: "Paiement sécurisé",
   },
   repair: {
     badge: "Service Réparations",
@@ -428,6 +434,7 @@ export const fr: Translations = {
     navOrders: "Ventes",
     navCustomers: "Clients",
     navRepairs: "Réparations",
+    navSettings: "Réinit. données",
     logout: "Déconnexion",
     loadingDashboard: "Chargement du tableau de bord...",
     statRevenue: "Revenus totaux",
@@ -661,6 +668,35 @@ export const fr: Translations = {
     repairTypesPriceRequired: "Entrez un prix de base valide avant d'ajouter.",
     repairTypesDeleteConfirm:
       "Supprimer ce type ? Les tickets existants conservent le problème enregistré.",
+    dataResetTitle: "Zone dangereuse",
+    dataResetWarning: "Action irréversible",
+    dataResetDesc:
+      "Supprime toutes les données opérationnelles de la boutique. Irréversible. À utiliser uniquement pour repartir de zéro.",
+    dataResetDeletesProducts: "Tous les produits et listings téléphones",
+    dataResetDeletesOrders: "Toutes les commandes et l'historique des ventes",
+    dataResetDeletesCustomers: "Fichier clients",
+    dataResetDeletesRepairs: "Tous les tickets de réparation",
+    dataResetDeletesPromotions: "Texte de la bannière promo (réinitialisé)",
+    dataResetDeletesImages: "Images produits téléchargées",
+    dataResetKeepsCatalog:
+      "Les options catalogue sont conservées : marques, modèles, conditions, stockage, couleurs, séries et types de réparation.",
+    dataResetButton: "Supprimer toutes les données boutique…",
+    dataResetModalTitle: "Confirmer la suppression des données",
+    dataResetModalWarning: "Dernier avertissement",
+    dataResetModalBody:
+      "Vous allez supprimer définitivement produits, commandes, clients, réparations et images. Les options catalogue resteront.",
+    dataResetAcknowledge:
+      "Je comprends que cette action est permanente et irréversible.",
+    dataResetPhraseLabel: "Saisissez la phrase de confirmation exactement",
+    dataResetPasswordLabel: "Ressaisissez le mot de passe admin",
+    dataResetConfirm: "Tout supprimer",
+    dataResetProcessing: "Suppression…",
+    dataResetSuccess: "Données boutique supprimées. Les options catalogue ont été conservées.",
+    dataResetError: "Échec de la réinitialisation. Réessayez.",
+    settingsBadge: "Avancé",
+    settingsTitle: "Réinitialisation boutique",
+    settingsDesc:
+      "Utilisez cette zone uniquement pour effacer les données opérationnelles et repartir de zéro. Les options du catalogue sont toujours conservées.",
   },
   footer: {
     desc: "Distributeur technique spécialisé en téléphonie mobile, accessoires premium et réparations professionnelles.",

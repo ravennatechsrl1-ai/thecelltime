@@ -10,7 +10,8 @@ export type AdminView =
   | "promotions"
   | "orders"
   | "customers"
-  | "repairs";
+  | "repairs"
+  | "settings";
 
 export interface AdminNavItem {
   id: AdminView;

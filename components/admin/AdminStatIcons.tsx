@@ -216,3 +216,22 @@ export function IconAddProduct({ className = defaultClass }: IconProps) {
     </svg>
   );
 }
+
+/** Warning — data reset / dangerous settings */
+export function IconSettings({ className = defaultClass }: IconProps) {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      className={className}
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.75"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+    >
+      <path d="M12 9v4m0 4h.01" />
+      <path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z" />
+    </svg>
+  );
+}

@@ -17,7 +17,9 @@ export async function POST(request: NextRequest) {
       !shippingAddress?.city?.trim() ||
       !shippingAddress?.country?.trim() ||
       !shippingAddress?.firstName?.trim() ||
-      !shippingAddress?.lastName?.trim()
+      !shippingAddress?.lastName?.trim() ||
+      !shippingAddress?.postalCode?.trim() ||
+      !shippingAddress?.phone?.trim()
     ) {
       return NextResponse.json(
         { error: "Missing required checkout fields." },

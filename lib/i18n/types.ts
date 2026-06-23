@@ -333,6 +333,12 @@ export interface Translations {
     city: string;
     postalCode: string;
     phone: string;
+    emailLockedHint: string;
+    emailRequired: string;
+    completeDeliveryFirst: string;
+    deliveryIncomplete: string;
+    paymentLoading: string;
+    secureCheckout: string;
   };
   repair: {
     badge: string;
@@ -458,6 +464,7 @@ export interface Translations {
     navOrders: string;
     navCustomers: string;
     navRepairs: string;
+    navSettings: string;
     logout: string;
     loadingDashboard: string;
     statRevenue: string;
@@ -679,6 +686,30 @@ export interface Translations {
     repairTypesSaveError: string;
     repairTypesPriceRequired: string;
     repairTypesDeleteConfirm: string;
+    dataResetTitle: string;
+    dataResetWarning: string;
+    dataResetDesc: string;
+    dataResetDeletesProducts: string;
+    dataResetDeletesOrders: string;
+    dataResetDeletesCustomers: string;
+    dataResetDeletesRepairs: string;
+    dataResetDeletesPromotions: string;
+    dataResetDeletesImages: string;
+    dataResetKeepsCatalog: string;
+    dataResetButton: string;
+    dataResetModalTitle: string;
+    dataResetModalWarning: string;
+    dataResetModalBody: string;
+    dataResetAcknowledge: string;
+    dataResetPhraseLabel: string;
+    dataResetPasswordLabel: string;
+    dataResetConfirm: string;
+    dataResetProcessing: string;
+    dataResetSuccess: string;
+    dataResetError: string;
+    settingsBadge: string;
+    settingsTitle: string;
+    settingsDesc: string;
   };
   footer: {
     desc: string;

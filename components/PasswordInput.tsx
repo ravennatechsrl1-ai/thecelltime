@@ -46,6 +46,7 @@ export default function PasswordInput({
   minLength,
   hint,
   inputClassName = "input-field pr-11",
+  toggleClassName = "text-brand-gray-400 hover:text-brand-electric",
 }: {
   id: string;
   value: string;
@@ -55,6 +56,7 @@ export default function PasswordInput({
   minLength?: number;
   hint?: string;
   inputClassName?: string;
+  toggleClassName?: string;
 }) {
   const { t } = useLanguage();
   const [visible, setVisible] = useState(false);
@@ -75,7 +77,7 @@ export default function PasswordInput({
         <button
           type="button"
           onClick={() => setVisible((prev) => !prev)}
-          className="absolute right-3 top-1/2 flex h-9 w-9 -translate-y-1/2 items-center justify-center rounded-md text-brand-gray-400 transition-colors hover:text-brand-electric"
+          className={`absolute right-3 top-1/2 flex h-9 w-9 -translate-y-1/2 items-center justify-center rounded-md transition-colors ${toggleClassName}`}
           aria-label={visible ? t.auth.hidePassword : t.auth.showPassword}
           aria-pressed={visible}
         >

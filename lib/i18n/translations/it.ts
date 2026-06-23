@@ -302,6 +302,12 @@ export const it: Translations = {
     city: "Città",
     postalCode: "CAP",
     phone: "Telefono",
+    emailLockedHint: "Dal tuo account — non modificabile qui.",
+    emailRequired: "Inserisci un indirizzo email valido.",
+    completeDeliveryFirst: "Completa tutti i campi di consegna per sbloccare il pagamento.",
+    deliveryIncomplete: "Inserisci l'indirizzo completo e il telefono prima di pagare.",
+    paymentLoading: "Caricamento pagamento sicuro…",
+    secureCheckout: "Checkout sicuro",
   },
   repair: {
     badge: "Servizio Riparazioni",
@@ -428,6 +434,7 @@ export const it: Translations = {
     navOrders: "Vendite",
     navCustomers: "Clienti",
     navRepairs: "Riparazioni",
+    navSettings: "Reset dati",
     logout: "Esci",
     loadingDashboard: "Caricamento dashboard...",
     statRevenue: "Ricavi totali",
@@ -661,6 +668,35 @@ export const it: Translations = {
     repairTypesPriceRequired: "Inserisci un prezzo base valido prima di aggiungere.",
     repairTypesDeleteConfirm:
       "Eliminare questo tipo? I ticket esistenti mantengono il problema salvato.",
+    dataResetTitle: "Zona pericolosa",
+    dataResetWarning: "Azione irreversibile",
+    dataResetDesc:
+      "Elimina tutti i dati operativi del negozio dal database. Non può essere annullato. Usare solo per ripartire da zero.",
+    dataResetDeletesProducts: "Tutti i prodotti e le listing telefoni",
+    dataResetDeletesOrders: "Tutti gli ordini e lo storico vendite",
+    dataResetDeletesCustomers: "Anagrafica clienti",
+    dataResetDeletesRepairs: "Tutti i ticket riparazione",
+    dataResetDeletesPromotions: "Testo banner promozionale (svuotato)",
+    dataResetDeletesImages: "Immagini prodotti caricate",
+    dataResetKeepsCatalog:
+      "Le opzioni catalogo restano: brand, modelli, condizioni, storage, colori, serie e tipi riparazione.",
+    dataResetButton: "Elimina tutti i dati negozio…",
+    dataResetModalTitle: "Conferma cancellazione dati",
+    dataResetModalWarning: "Ultimo avviso",
+    dataResetModalBody:
+      "Stai per eliminare definitivamente prodotti, ordini, clienti, riparazioni e immagini. Le opzioni catalogo resteranno.",
+    dataResetAcknowledge:
+      "Comprendo che questa azione è permanente e non può essere annullata.",
+    dataResetPhraseLabel: "Digita la frase di conferma esattamente",
+    dataResetPasswordLabel: "Reinserisci la password admin",
+    dataResetConfirm: "Elimina tutto",
+    dataResetProcessing: "Eliminazione…",
+    dataResetSuccess: "Dati negozio eliminati. Le opzioni catalogo sono state conservate.",
+    dataResetError: "Reset dati non riuscito. Riprova.",
+    settingsBadge: "Avanzate",
+    settingsTitle: "Reset dati negozio",
+    settingsDesc:
+      "Usa questa area solo quando devi cancellare i dati operativi e ripartire da zero. Le opzioni catalogo restano sempre salvate.",
   },
   footer: {
     desc: "Distributore tecnico specializzato in telefonia mobile, accessori premium e riparazioni professionali.",

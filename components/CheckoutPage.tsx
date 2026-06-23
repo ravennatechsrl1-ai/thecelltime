@@ -75,11 +75,50 @@ function splitName(fullName: string): { firstName: string; lastName: string } {
   };
 }
 
+function isDeliveryComplete(shipping: ShippingAddress): boolean {
+  return (
+    shipping.firstName.trim().length > 0 &&
+    shipping.lastName.trim().length > 0 &&
+    shipping.addressLine1.trim().length > 0 &&
+    shipping.city.trim().length > 0 &&
+    shipping.postalCode.trim().length > 0 &&
+    shipping.country.trim().length > 0 &&
+    shipping.phone.trim().length > 0
+  );
+}
+
+function CheckoutSection({
+  step,
+  title,
+  children,
+  muted,
+}: {
+  step: number;
+  title: string;
+  children: React.ReactNode;
+  muted?: boolean;
+}) {
+  return (
+    <section
+      className={`checkout-section transition-opacity duration-300 ${
+        muted ? "opacity-60" : ""
+      }`}
+    >
+      <h2 className="checkout-section-title">
+        <span className="checkout-step">{step}</span>
+        {title}
+      </h2>
+      <div className="mt-5">{children}</div>
+    </section>
+  );
+}
+
 function CheckoutPaymentForm({
   lineItems,
   totalAmount,
   paymentIntentId,
   email,
+  emailLocked,
   setEmail,
   shipping,
   setShipping,
@@ -88,6 +127,7 @@ function CheckoutPaymentForm({
   totalAmount: number;
   paymentIntentId: string;
   email: string;
+  emailLocked: boolean;
   setEmail: (value: string) => void;
   shipping: ShippingAddress;
   setShipping: React.Dispatch<React.SetStateAction<ShippingAddress>>;
@@ -98,10 +138,30 @@ function CheckoutPaymentForm({
   const { user } = useAuth();
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [paymentReady, setPaymentReady] = useState(false);
+
+  const deliveryComplete = isDeliveryComplete(shipping);
+  const emailComplete = email.trim().length > 0 && email.includes("@");
+
+  useEffect(() => {
+    if (!deliveryComplete) {
+      setPaymentReady(false);
+    }
+  }, [deliveryComplete]);
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
     if (!stripe || !elements) return;
+
+    if (!deliveryComplete) {
+      setError(t.checkout.deliveryIncomplete);
+      return;
+    }
+
+    if (!emailComplete) {
+      setError(t.checkout.emailRequired);
+      return;
+    }
 
     setSubmitting(true);
     setError(null);
@@ -135,6 +195,11 @@ function CheckoutPaymentForm({
         throw new Error(prepareData.error ?? t.checkout.paymentError);
       }
 
+      const { error: submitError } = await elements.submit();
+      if (submitError) {
+        throw new Error(submitError.message ?? t.checkout.paymentError);
+      }
+
       const { error: confirmError } = await stripe.confirmPayment({
         elements,
         confirmParams: {
@@ -144,12 +209,12 @@ function CheckoutPaymentForm({
             billing_details: {
               name: fullName,
               email: email.trim(),
-              phone: shipping.phone.trim() || undefined,
+              phone: shipping.phone.trim(),
               address: {
                 line1: shipping.addressLine1,
                 line2: shipping.addressLine2 || undefined,
                 city: shipping.city,
-                postal_code: shipping.postalCode || undefined,
+                postal_code: shipping.postalCode,
                 country: shipping.country,
               },
             },
@@ -167,32 +232,35 @@ function CheckoutPaymentForm({
   }
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-8">
-      <section>
-        <h2 className="text-lg font-semibold text-brand-navy">
-          {t.checkout.contactTitle}
-        </h2>
-        <div className="mt-4">
+    <form onSubmit={handleSubmit} className="space-y-5">
+      <CheckoutSection step={1} title={t.checkout.contactTitle}>
+        <div>
           <label htmlFor="checkout-email" className="checkout-label">
             {t.checkout.email}
           </label>
           <input
             id="checkout-email"
             type="email"
+            readOnly={emailLocked}
             required
             autoComplete="email"
             value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            className="checkout-input"
+            onChange={
+              emailLocked ? undefined : (e) => setEmail(e.target.value)
+            }
+            className={emailLocked ? "checkout-input-readonly" : "checkout-input"}
+            aria-readonly={emailLocked}
           />
+          {emailLocked ? (
+            <p className="mt-1.5 text-xs text-brand-gray-500">
+              {t.checkout.emailLockedHint}
+            </p>
+          ) : null}
         </div>
-      </section>
+      </CheckoutSection>
 
-      <section>
-        <h2 className="text-lg font-semibold text-brand-navy">
-          {t.checkout.deliveryTitle}
-        </h2>
-        <div className="mt-4 space-y-4">
+      <CheckoutSection step={2} title={t.checkout.deliveryTitle}>
+        <div className="space-y-4">
           <div>
             <label htmlFor="checkout-country" className="checkout-label">
               {t.checkout.country}
@@ -312,6 +380,7 @@ function CheckoutPaymentForm({
               </label>
               <input
                 id="checkout-postal"
+                required
                 autoComplete="postal-code"
                 value={shipping.postalCode}
                 onChange={(e) =>
@@ -342,44 +411,84 @@ function CheckoutPaymentForm({
             />
           </div>
         </div>
-      </section>
+      </CheckoutSection>
 
-      <section>
-        <h2 className="text-lg font-semibold text-brand-navy">
-          {t.checkout.shippingTitle}
-        </h2>
-        <div className="mt-4 flex items-center justify-between rounded-lg border border-brand-gray-200 bg-brand-gray-50 px-4 py-3 text-sm">
-          <span className="font-medium text-brand-navy">
+      <CheckoutSection step={3} title={t.checkout.shippingTitle}>
+        <div className="flex items-center justify-between rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3.5 text-sm">
+          <span className="font-semibold text-brand-navy">
             {t.checkout.freeShipping}
           </span>
-          <span className="font-semibold uppercase text-emerald-700">
+          <span className="rounded-full bg-emerald-100 px-2.5 py-0.5 text-xs font-bold uppercase text-emerald-800">
             {t.checkout.freeShippingPrice}
           </span>
         </div>
-      </section>
+      </CheckoutSection>
 
-      <section>
-        <h2 className="text-lg font-semibold text-brand-navy">
-          {t.checkout.paymentTitle}
-        </h2>
-        <p className="mt-1 text-sm text-brand-gray-500">
+      <CheckoutSection
+        step={4}
+        title={t.checkout.paymentTitle}
+        muted={!deliveryComplete}
+      >
+        <p className="mb-4 text-sm text-brand-gray-500">
           {t.checkout.paymentSecure}
         </p>
-        <div className="mt-4 rounded-lg border border-brand-gray-200 bg-white p-4">
-          <PaymentElement options={{ layout: "tabs" }} />
-        </div>
-      </section>
+
+        {!deliveryComplete ? (
+          <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
+            {t.checkout.completeDeliveryFirst}
+          </div>
+        ) : (
+          <div className="rounded-xl border border-brand-gray-200 bg-brand-gray-50/80 p-4">
+            {!paymentReady && (
+              <p className="mb-3 text-sm text-brand-gray-500">
+                {t.checkout.paymentLoading}
+              </p>
+            )}
+            <PaymentElement
+              onReady={() => setPaymentReady(true)}
+              options={{
+                layout: {
+                  type: "tabs",
+                  defaultCollapsed: false,
+                },
+                wallets: {
+                  applePay: "auto",
+                  googlePay: "auto",
+                },
+                fields: {
+                  billingDetails: {
+                    address: "never",
+                    email: "never",
+                    phone: "never",
+                    name: "never",
+                  },
+                },
+              }}
+            />
+          </div>
+        )}
+      </CheckoutSection>
 
       {error ? (
-        <p className="text-sm text-red-600" role="alert">
+        <p
+          className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700"
+          role="alert"
+        >
           {error}
         </p>
       ) : null}
 
       <button
         type="submit"
-        disabled={!stripe || !elements || submitting}
-        className="flex min-h-[52px] w-full items-center justify-center rounded-md bg-brand-navy text-sm font-bold uppercase tracking-wide text-white transition-colors hover:bg-brand-electric disabled:cursor-not-allowed disabled:opacity-50"
+        disabled={
+          !stripe ||
+          !elements ||
+          submitting ||
+          !emailComplete ||
+          !deliveryComplete ||
+          !paymentReady
+        }
+        className="flex min-h-[54px] w-full items-center justify-center rounded-xl bg-gradient-to-r from-brand-navy to-brand-electric text-sm font-bold uppercase tracking-wide text-white shadow-glow-electric transition-all hover:-translate-y-0.5 disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:translate-y-0"
       >
         {submitting
           ? t.checkout.processing
@@ -497,10 +606,28 @@ export default function CheckoutPage() {
         appearance: {
           theme: "stripe",
           variables: {
-            colorPrimary: "#0066ff",
-            borderRadius: "6px",
+            colorPrimary: "#1e6bff",
+            colorBackground: "#ffffff",
+            colorText: "#0a1628",
+            colorDanger: "#dc2626",
+            borderRadius: "10px",
+            fontFamily: "system-ui, sans-serif",
+            spacingUnit: "4px",
+          },
+          rules: {
+            ".Input": {
+              border: "1px solid #dde3ed",
+              boxShadow: "none",
+            },
+            ".Tab": {
+              border: "1px solid #dde3ed",
+            },
+            ".Tab--selected": {
+              borderColor: "#1e6bff",
+            },
           },
         },
+        loader: "auto",
       }
     : undefined;
 
@@ -531,18 +658,23 @@ export default function CheckoutPage() {
   }
 
   return (
-    <div className="min-h-screen bg-brand-gray-50">
-      <header className="border-b border-brand-gray-200 bg-white">
+    <div className="min-h-screen bg-gradient-to-b from-brand-gray-50 via-white to-brand-gray-50">
+      <header className="border-b border-brand-gray-200 bg-white/90 backdrop-blur-sm">
         <div className="container-app flex min-h-[4rem] items-center justify-between py-3">
           <Link href="/" className="inline-flex shrink-0 items-center">
             <SiteLogo className="h-10 w-auto" linked={false} />
           </Link>
-          <Link
-            href="/shop"
-            className="text-xs font-semibold uppercase tracking-wide text-brand-gray-500 hover:text-brand-electric"
-          >
-            {t.checkout.continueShopping}
-          </Link>
+          <div className="flex items-center gap-4">
+            <span className="hidden text-[10px] font-bold uppercase tracking-widest text-brand-gray-400 sm:inline">
+              {t.checkout.secureCheckout}
+            </span>
+            <Link
+              href="/shop"
+              className="text-xs font-semibold uppercase tracking-wide text-brand-gray-500 hover:text-brand-electric"
+            >
+              {t.checkout.continueShopping}
+            </Link>
+          </div>
         </div>
       </header>
 
@@ -555,6 +687,7 @@ export default function CheckoutPage() {
                 totalAmount={totalAmount}
                 paymentIntentId={paymentIntentId}
                 email={email}
+                emailLocked={Boolean(user?.email)}
                 setEmail={setEmail}
                 shipping={shipping}
                 setShipping={setShipping}
@@ -563,52 +696,57 @@ export default function CheckoutPage() {
           </div>
 
           <aside className="order-1 lg:order-2">
-            <div className="sticky top-6 rounded-xl border border-brand-gray-200 bg-brand-gray-100/80 p-5 lg:p-6">
-              <h2 className="text-sm font-bold uppercase tracking-wide text-brand-gray-500">
-                {t.checkout.orderSummary}
-              </h2>
+            <div className="sticky top-6 overflow-hidden rounded-2xl border border-brand-gray-200 bg-white shadow-card">
+              <div className="border-b border-brand-gray-100 bg-brand-navy px-5 py-4">
+                <h2 className="text-sm font-bold uppercase tracking-wide text-white">
+                  {t.checkout.orderSummary}
+                </h2>
+              </div>
+              <div className="p-5 lg:p-6">
+                <ul className="space-y-4">
+                  {lineItems.map((item) => (
+                    <li key={item.productId} className="flex gap-3">
+                      <div className="relative h-16 w-16 shrink-0">
+                        <div className="relative h-full w-full overflow-hidden rounded-lg border border-brand-gray-200 bg-white">
+                          {item.imageUrl ? (
+                            <Image
+                              src={item.imageUrl}
+                              alt={item.name}
+                              fill
+                              className="object-contain p-1"
+                              sizes="64px"
+                            />
+                          ) : null}
+                        </div>
+                        <span className="absolute -right-1.5 -top-1.5 z-10 flex h-5 min-w-[20px] items-center justify-center rounded-full bg-brand-navy px-1 text-[10px] font-bold text-white ring-2 ring-white">
+                          {item.quantity}
+                        </span>
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <p className="truncate text-sm font-medium text-brand-navy">
+                          {item.name}
+                        </p>
+                        <p className="mt-1 text-sm font-semibold text-brand-navy">
+                          {formatPrice(item.price * item.quantity)}
+                        </p>
+                      </div>
+                    </li>
+                  ))}
+                </ul>
 
-              <ul className="mt-4 space-y-4">
-                {lineItems.map((item) => (
-                  <li key={item.productId} className="flex gap-3">
-                    <div className="relative h-16 w-16 shrink-0 overflow-hidden rounded-lg border border-brand-gray-200 bg-white">
-                      {item.imageUrl ? (
-                        <Image
-                          src={item.imageUrl}
-                          alt={item.name}
-                          fill
-                          className="object-contain p-1"
-                          sizes="64px"
-                        />
-                      ) : null}
-                      <span className="absolute -right-1 -top-1 flex h-5 min-w-[20px] items-center justify-center rounded-full bg-brand-navy px-1 text-[10px] font-bold text-white">
-                        {item.quantity}
-                      </span>
-                    </div>
-                    <div className="min-w-0 flex-1">
-                      <p className="truncate text-sm font-medium text-brand-navy">
-                        {item.name}
-                      </p>
-                      <p className="mt-1 text-sm font-semibold text-brand-navy">
-                        {formatPrice(item.price * item.quantity)}
-                      </p>
-                    </div>
-                  </li>
-                ))}
-              </ul>
-
-              <div className="mt-6 space-y-2 border-t border-brand-gray-200 pt-4 text-sm">
-                <div className="flex justify-between text-brand-gray-600">
-                  <span>{t.checkout.subtotal}</span>
-                  <span>{formatPrice(subtotal)}</span>
-                </div>
-                <div className="flex justify-between text-brand-gray-600">
-                  <span>{t.checkout.shippingLabel}</span>
-                  <span>{t.checkout.freeShippingPrice}</span>
-                </div>
-                <div className="flex justify-between border-t border-brand-gray-200 pt-3 text-base font-bold text-brand-navy">
-                  <span>{t.cart.total}</span>
-                  <span>{formatPrice(totalAmount)}</span>
+                <div className="mt-6 space-y-2 border-t border-brand-gray-200 pt-4 text-sm">
+                  <div className="flex justify-between text-brand-gray-600">
+                    <span>{t.checkout.subtotal}</span>
+                    <span>{formatPrice(subtotal)}</span>
+                  </div>
+                  <div className="flex justify-between text-brand-gray-600">
+                    <span>{t.checkout.shippingLabel}</span>
+                    <span>{t.checkout.freeShippingPrice}</span>
+                  </div>
+                  <div className="flex justify-between border-t border-brand-gray-200 pt-3 text-base font-bold text-brand-navy">
+                    <span>{t.cart.total}</span>
+                    <span>{formatPrice(totalAmount)}</span>
+                  </div>
                 </div>
               </div>
             </div>
