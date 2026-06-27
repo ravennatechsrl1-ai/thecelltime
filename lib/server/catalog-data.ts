@@ -12,6 +12,7 @@ export const getCachedProducts = unstable_cache(
     const { data, error } = await supabase
       .from("products")
       .select("*")
+      .eq("frozen", false)
       .order("created_at", { ascending: false });
 
     if (error) {

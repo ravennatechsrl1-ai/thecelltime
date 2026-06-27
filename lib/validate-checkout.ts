@@ -53,6 +53,9 @@ export async function validateCheckoutLineItems(
     }
 
     const product = mapProductRow(data as Record<string, unknown>);
+    if (product.frozen) {
+      throw new Error(`Product is no longer available: ${product.name}.`);
+    }
     if (product.stock < item.quantity) {
       throw new Error(`Insufficient stock for ${product.name}.`);
     }

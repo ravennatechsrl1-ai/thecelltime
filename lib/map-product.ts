@@ -63,5 +63,6 @@ export function mapProductRow(row: Record<string, unknown>): Product {
     phone_listing_id: (row.phone_listing_id as string) ?? null,
     phone_listing_base_name: readListingBaseName(row),
     phone_listing_base_name_i18n: readListingBaseNameI18n(row),
+    frozen: row.frozen === true,
   };
 }

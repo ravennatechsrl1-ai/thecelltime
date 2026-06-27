@@ -22,6 +22,7 @@ export const getCachedProducts = unstable_cache(
     const { data, error } = await supabase
       .from("products")
       .select("*, phone_listings(base_name, base_name_i18n)")
+      .eq("frozen", false)
       .order("created_at", { ascending: false });
 
     if (error) {

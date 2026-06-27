@@ -30,6 +30,8 @@ export interface Product {
   storage?: string | null;
   /** Phone color label (e.g. Black) */
   color?: string | null;
+  /** When true, hidden from the public shop but kept in admin and database. */
+  frozen: boolean;
   /** Parent phone listing (one card in shop) */
   phone_listing_id?: string | null;
   /** Denormalized listing title without storage/color */

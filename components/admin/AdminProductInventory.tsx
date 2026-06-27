@@ -4,7 +4,7 @@ import { ChangeEvent, FormEvent, useMemo, useState } from "react";
 import AdminModal from "@/components/admin/AdminModal";
 import SafeImage from "@/components/SafeImage";
 import { useLanguage } from "@/components/LanguageProvider";
-import { Product, ProductCondition } from "@/types";
+import { Product, ProductCategory, ProductCondition } from "@/types";
 
 function FieldLabel({
   htmlFor,
@@ -24,6 +24,7 @@ function FieldLabel({
 }
 
 type StockFilter = "all" | "in_stock" | "low" | "out";
+type VisibilityFilter = "all" | "visible" | "frozen";
 
 export interface AdminInventoryFilter {
   id: string;
@@ -38,6 +39,8 @@ export default function AdminProductInventory({
   loading,
   onReload,
   showCondition = false,
+  showCategory = false,
+  compactActions = false,
   conditionOptions,
   storageOptions,
   colorOptions,
@@ -48,6 +51,8 @@ export default function AdminProductInventory({
   loading: boolean;
   onReload: () => void;
   showCondition?: boolean;
+  showCategory?: boolean;
+  compactActions?: boolean;
   conditionOptions?: { slug: string; label: string }[];
   storageOptions?: string[];
   colorOptions?: { label: string; hex_color?: string }[];
@@ -57,8 +62,11 @@ export default function AdminProductInventory({
   const { t, formatPrice } = useLanguage();
   const [searchQuery, setSearchQuery] = useState("");
   const [brandFilter, setBrandFilter] = useState("all");
+  const [categoryFilter, setCategoryFilter] = useState("all");
   const [conditionFilter, setConditionFilter] = useState("all");
   const [stockFilter, setStockFilter] = useState<StockFilter>("all");
+  const [visibilityFilter, setVisibilityFilter] =
+    useState<VisibilityFilter>("all");
   const [extraFilters, setExtraFilters] = useState<Record<string, string>>({});
 
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
@@ -73,6 +81,7 @@ export default function AdminProductInventory({
   const [editImageFile, setEditImageFile] = useState<File | null>(null);
   const [editSaving, setEditSaving] = useState(false);
   const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [freezingId, setFreezingId] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
@@ -80,6 +89,26 @@ export default function AdminProductInventory({
     const brands = new Set(products.map((p) => p.brand));
     return Array.from(brands).sort((a, b) => a.localeCompare(b));
   }, [products]);
+
+  const categoryOptions = useMemo(() => {
+    const categories = new Set(products.map((p) => p.category));
+    return Array.from(categories).sort();
+  }, [products]);
+
+  function categoryLabel(category: ProductCategory): string {
+    switch (category) {
+      case "phones":
+        return t.admin.tabMobiles;
+      case "protection":
+        return t.protection.navLabel;
+      case "accessories":
+        return t.accessoriesCatalog.navLabel;
+      case "other":
+        return t.admin.tabOther;
+      default:
+        return category;
+    }
+  }
 
   const displayedProducts = useMemo(() => {
     let list = products;
@@ -94,6 +123,9 @@ export default function AdminProductInventory({
     if (brandFilter !== "all") {
       list = list.filter((p) => p.brand === brandFilter);
     }
+    if (showCategory && categoryFilter !== "all") {
+      list = list.filter((p) => p.category === categoryFilter);
+    }
     if (showCondition && conditionFilter !== "all") {
       list = list.filter((p) => p.condition === conditionFilter);
     }
@@ -104,28 +136,40 @@ export default function AdminProductInventory({
     } else if (stockFilter === "out") {
       list = list.filter((p) => p.stock <= 0);
     }
+    if (visibilityFilter === "visible") {
+      list = list.filter((p) => !p.frozen);
+    } else if (visibilityFilter === "frozen") {
+      list = list.filter((p) => p.frozen);
+    }
     return list;
   }, [
     products,
     searchQuery,
     brandFilter,
+    categoryFilter,
     conditionFilter,
     stockFilter,
+    visibilityFilter,
     showCondition,
+    showCategory,
     extraFilters,
   ]);
 
   const hasActiveFilters =
     searchQuery.trim() !== "" ||
     brandFilter !== "all" ||
+    categoryFilter !== "all" ||
     conditionFilter !== "all" ||
-    stockFilter !== "all";
+    stockFilter !== "all" ||
+    visibilityFilter !== "all";
 
   function resetFilters() {
     setSearchQuery("");
     setBrandFilter("all");
+    setCategoryFilter("all");
     setConditionFilter("all");
     setStockFilter("all");
+    setVisibilityFilter("all");
     setExtraFilters({});
   }
 
@@ -197,6 +241,32 @@ export default function AdminProductInventory({
     }
   }
 
+  async function handleToggleFreeze(product: Product) {
+    const nextFrozen = !product.frozen;
+    setFreezingId(product.id);
+    setError(null);
+    setMessage(null);
+
+    try {
+      const response = await fetch(
+        `/api/admin/products/${product.id}/freeze`,
+        {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ frozen: nextFrozen }),
+        }
+      );
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.error ?? t.admin.uploadError);
+      setMessage(nextFrozen ? t.admin.freezeSuccess : t.admin.unfreezeSuccess);
+      await onReload();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : t.admin.uploadError);
+    } finally {
+      setFreezingId(null);
+    }
+  }
+
   async function handleDelete(product: Product) {
     if (!window.confirm(`${t.admin.deleteProduct}?`)) return;
     setDeletingId(product.id);
@@ -257,6 +327,24 @@ export default function AdminProductInventory({
                   ))}
                 </select>
               </div>
+              {showCategory && (
+                <div>
+                  <FieldLabel htmlFor="inv-category">{t.admin.colCategory}</FieldLabel>
+                  <select
+                    id="inv-category"
+                    value={categoryFilter}
+                    onChange={(e) => setCategoryFilter(e.target.value)}
+                    className="input-field"
+                  >
+                    <option value="all">{t.admin.filterCategoryAll}</option>
+                    {categoryOptions.map((category) => (
+                      <option key={category} value={category}>
+                        {categoryLabel(category)}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              )}
               {showCondition && (
                 <div>
                   <FieldLabel htmlFor="inv-condition">{t.admin.condition}</FieldLabel>
@@ -289,6 +377,23 @@ export default function AdminProductInventory({
                   <option value="out">{t.admin.filterStockOut}</option>
                 </select>
               </div>
+              <div>
+                <FieldLabel htmlFor="inv-visibility">
+                  {t.admin.filterVisibility}
+                </FieldLabel>
+                <select
+                  id="inv-visibility"
+                  value={visibilityFilter}
+                  onChange={(e) =>
+                    setVisibilityFilter(e.target.value as VisibilityFilter)
+                  }
+                  className="input-field"
+                >
+                  <option value="all">{t.admin.filterVisibilityAll}</option>
+                  <option value="visible">{t.admin.filterVisibilityVisible}</option>
+                  <option value="frozen">{t.admin.filterVisibilityFrozen}</option>
+                </select>
+              </div>
             </div>
             <div className="mt-3 flex flex-wrap items-center justify-between gap-2">
               <p className="text-xs text-brand-gray-500">
@@ -314,12 +419,21 @@ export default function AdminProductInventory({
           {displayedProducts.length === 0 ? (
             <p className="text-sm text-brand-gray-500">{t.admin.noFilterResults}</p>
           ) : (
-            <div className="overflow-x-auto">
-              <table className="w-full min-w-[860px] text-left text-sm">
+            <div className="space-y-2">
+              {compactActions ? (
+                <p className="text-xs font-medium text-brand-electric">
+                  {t.admin.freezeHint}
+                </p>
+              ) : null}
+            <div className="overflow-x-auto rounded-xl border border-brand-gray-200">
+              <table className="w-full min-w-[720px] text-left text-sm">
                 <thead className="border-b border-brand-gray-200 bg-brand-gray-50 text-xs font-bold uppercase tracking-wide text-brand-gray-500">
                   <tr>
                     <th className="px-3 py-3">{t.admin.colProduct}</th>
                     <th className="px-3 py-3">{t.admin.brand}</th>
+                    {showCategory && (
+                      <th className="px-3 py-3">{t.admin.colCategory}</th>
+                    )}
                     {extraColumns?.map((col) => (
                       <th key={col.key} className="px-3 py-3">
                         {col.label}
@@ -330,14 +444,18 @@ export default function AdminProductInventory({
                     )}
                     <th className="px-3 py-3">{t.admin.price}</th>
                     <th className="px-3 py-3">{t.admin.stock}</th>
-                    <th className="px-3 py-3">{t.admin.colActions}</th>
+                    <th className="sticky right-0 z-10 bg-brand-gray-50 px-3 py-3 shadow-[-4px_0_8px_-4px_rgba(0,0,0,0.08)]">
+                      {compactActions ? t.admin.colShopVisibility : t.admin.colActions}
+                    </th>
                   </tr>
                 </thead>
                 <tbody>
                   {displayedProducts.map((product) => (
                     <tr
                       key={product.id}
-                      className="border-b border-brand-gray-100 hover:bg-brand-gray-50"
+                      className={`border-b border-brand-gray-100 hover:bg-brand-gray-50 ${
+                        product.frozen ? "bg-brand-gray-50/80 opacity-75" : ""
+                      }`}
                     >
                       <td className="px-3 py-3">
                         <div className="flex items-center gap-3">
@@ -346,16 +464,30 @@ export default function AdminProductInventory({
                             alt=""
                             width={40}
                             height={40}
-                            className="h-10 w-10 rounded border border-brand-gray-200 object-cover"
+                            className={`h-10 w-10 rounded border border-brand-gray-200 object-cover ${
+                              product.frozen ? "grayscale" : ""
+                            }`}
                           />
-                          <span className="font-medium text-brand-navy">
-                            {product.name}
-                          </span>
+                          <div className="min-w-0">
+                            <span className="font-medium text-brand-navy">
+                              {product.name}
+                            </span>
+                            {product.frozen ? (
+                              <span className="ml-2 inline-flex rounded-full bg-slate-200 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-slate-700">
+                                {t.admin.productFrozenBadge}
+                              </span>
+                            ) : null}
+                          </div>
                         </div>
                       </td>
                       <td className="px-3 py-3 text-brand-gray-600">
                         {product.brand}
                       </td>
+                      {showCategory && (
+                        <td className="px-3 py-3 text-brand-gray-600">
+                          {categoryLabel(product.category)}
+                        </td>
+                      )}
                       {renderExtraCells?.(product)}
                       {showCondition && (
                         <td className="px-3 py-3 text-brand-gray-600">
@@ -366,23 +498,51 @@ export default function AdminProductInventory({
                         {formatPrice(product.price)}
                       </td>
                       <td className="px-3 py-3">{product.stock}</td>
-                      <td className="px-3 py-3">
+                      <td
+                        className={`sticky right-0 z-10 px-3 py-3 shadow-[-4px_0_8px_-4px_rgba(0,0,0,0.08)] ${
+                          product.frozen ? "bg-brand-gray-50/80" : "bg-white"
+                        }`}
+                      >
                         <div className="flex flex-wrap gap-2">
                           <button
                             type="button"
-                            onClick={() => openEdit(product)}
-                            className="text-xs font-bold uppercase tracking-wide text-brand-electric hover:underline"
+                            onClick={() => handleToggleFreeze(product)}
+                            disabled={freezingId === product.id}
+                            className={
+                              compactActions
+                                ? `min-w-[6.5rem] rounded-lg px-3 py-2 text-xs font-bold uppercase tracking-wide transition-colors disabled:opacity-40 ${
+                                    product.frozen
+                                      ? "bg-emerald-600 text-white hover:bg-emerald-700"
+                                      : "bg-brand-navy text-white hover:bg-brand-navy/90"
+                                  }`
+                                : "text-xs font-bold uppercase tracking-wide text-brand-gray-600 hover:underline disabled:opacity-40"
+                            }
                           >
-                            {t.admin.editProduct}
+                            {freezingId === product.id
+                              ? t.admin.saving
+                              : product.frozen
+                                ? t.admin.unfreezeProduct
+                                : t.admin.freezeProduct}
                           </button>
-                          <button
-                            type="button"
-                            onClick={() => handleDelete(product)}
-                            disabled={deletingId === product.id}
-                            className="text-xs font-bold uppercase tracking-wide text-red-600 hover:underline disabled:opacity-40"
-                          >
-                            {t.admin.deleteProduct}
-                          </button>
+                          {!compactActions && (
+                            <>
+                              <button
+                                type="button"
+                                onClick={() => openEdit(product)}
+                                className="text-xs font-bold uppercase tracking-wide text-brand-electric hover:underline"
+                              >
+                                {t.admin.editProduct}
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => handleDelete(product)}
+                                disabled={deletingId === product.id}
+                                className="text-xs font-bold uppercase tracking-wide text-red-600 hover:underline disabled:opacity-40"
+                              >
+                                {t.admin.deleteProduct}
+                              </button>
+                            </>
+                          )}
                         </div>
                       </td>
                     </tr>
@@ -390,10 +550,12 @@ export default function AdminProductInventory({
                 </tbody>
               </table>
             </div>
+            </div>
           )}
         </div>
       )}
 
+      {!compactActions && (
       <AdminModal
         open={Boolean(editingProduct)}
         onClose={closeEdit}
@@ -553,6 +715,7 @@ export default function AdminProductInventory({
               </div>
             </form>
       </AdminModal>
+      )}
     </>
   );
 }

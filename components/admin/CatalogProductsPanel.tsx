@@ -2,17 +2,19 @@
 
 import { useState } from "react";
 import AccessoriesProductsPanel from "@/components/admin/AccessoriesProductsPanel";
+import AllProductsPanel from "@/components/admin/AllProductsPanel";
 import MobilesProductsPanel from "@/components/admin/MobilesProductsPanel";
 import ProtectionProductsPanel from "@/components/admin/ProtectionProductsPanel";
 import { useLanguage } from "@/components/LanguageProvider";
 
-export type CatalogTab = "mobiles" | "protection" | "accessories";
+export type CatalogTab = "all" | "mobiles" | "protection" | "accessories";
 
 export default function CatalogProductsPanel() {
   const { t } = useLanguage();
-  const [activeTab, setActiveTab] = useState<CatalogTab>("mobiles");
+  const [activeTab, setActiveTab] = useState<CatalogTab>("all");
 
   const tabs: { id: CatalogTab; label: string }[] = [
+    { id: "all", label: t.admin.tabAllProducts },
     { id: "mobiles", label: t.admin.tabMobiles },
     { id: "protection", label: t.protection.navLabel },
     { id: "accessories", label: t.accessoriesCatalog.navLabel },
@@ -37,6 +39,7 @@ export default function CatalogProductsPanel() {
         ))}
       </div>
 
+      {activeTab === "all" && <AllProductsPanel />}
       {activeTab === "mobiles" && <MobilesProductsPanel />}
       {activeTab === "protection" && <ProtectionProductsPanel />}
       {activeTab === "accessories" && <AccessoriesProductsPanel />}
